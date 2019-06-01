@@ -8,6 +8,9 @@ use std::env;
 
 use crate::models::Post;
 
+mod models;
+mod schema;
+
 fn establish_connection() -> PgConnection {
     dotenv().ok();
 
@@ -23,7 +26,7 @@ fn main() {
     let results = posts
         .limit(10)
         .load::<Post>(&connection)
-        .expect("Error loading posts");
+        .expect("Error loading posts, lol");
 
     for post in results {
         println!("{}", post.title);
