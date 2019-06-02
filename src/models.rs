@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::io::Write;
 
+use chrono::naive::NaiveDateTime;
 use diesel::deserialize::{self, FromSql};
 use diesel::not_none;
 use diesel::pg::types::sql_types::Jsonb;
@@ -9,8 +10,9 @@ use diesel::serialize::{self, IsNull, Output, ToSql};
 use serde_derive::*;
 
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize)]
-pub struct Post {
+pub struct Bookmark {
     pub id: i32,
+    pub created: NaiveDateTime,
     pub title: String,
     pub url: String,
     pub body: String,
@@ -18,9 +20,7 @@ pub struct Post {
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TagSet {
-    tags: HashSet<String>,
-}
+pub struct TagSet(HashSet<String>);
 
 // traits implements below
 
@@ -42,11 +42,11 @@ impl FromSql<Jsonb, Pg> for TagSet {
     }
 }
 
-// for some reason, diesel jsonb bytes starts with byte 1, seek subslice starts with "{"
+// for some reason, diesel jsonb bytes starts with byte 1, seek subslice starts with "{" | "["
 #[inline]
 fn seek_json_start(bytes: &[u8]) -> Option<&[u8]> {
     for i in 0..bytes.len() {
-        if bytes[i] == b'{' {
+        if bytes[i] == b'[' || bytes[i] == b'{' {
             return Some(&bytes[i..]);
         }
     }
@@ -67,11 +67,11 @@ mod tests {
 
     #[test]
     fn test_deserialize_tags() {
-        let json = r#"{"tags": ["foo", "bar"]}"#;
+        let json = r#"["foo", "bar"]"#;
         let tag_set: TagSet = serde_json::from_str(json).expect("Parse error");
-        let expected = TagSet {
-            tags: vec!["foo", "bar"].iter().map(ToString::to_string).collect(),
-        };
+        let expected = TagSet(
+            vec!["foo", "bar"].iter().map(ToString::to_string).collect(),
+        );
 
         assert_eq!(tag_set, expected);
     }
@@ -80,13 +80,13 @@ mod tests {
     fn test_from_sql() {
         // first byte in json is 1 :(
         let mut json: Vec<u8> = vec![1];
-        json.extend(r#"0{"tags": ["foo", "bar"]}"#.as_bytes());
+        json.extend(r#"["foo", "bar"]"#.as_bytes());
 
         let tag_set: TagSet =
             TagSet::from_sql(Some(&json)).expect("Parse error");
-        let expected = TagSet {
-            tags: vec!["foo", "bar"].iter().map(ToString::to_string).collect(),
-        };
+        let expected = TagSet(
+            vec!["foo", "bar"].iter().map(ToString::to_string).collect(),
+        );
 
         assert_eq!(tag_set, expected);
     }

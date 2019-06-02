@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
-use crate::models::Post;
+use crate::models::Bookmark;
 
 mod models;
 mod schema;
@@ -21,11 +21,12 @@ fn establish_connection() -> PgConnection {
 }
 
 fn main() {
-    use crate::schema::posts::dsl::*;
+    use crate::schema::bookmarks::dsl::*;
     let connection = establish_connection();
-    let results = posts
+    let results = bookmarks
         .limit(10)
-        .load::<Post>(&connection)
+        .order(created.desc())
+        .load::<Bookmark>(&connection)
         .expect("Error loading posts, lol");
 
     for post in results {
