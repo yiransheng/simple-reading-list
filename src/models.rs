@@ -9,6 +9,16 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use serde_derive::*;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JsonData<T> {
+    data: T,
+}
+impl<T> JsonData<T> {
+    pub fn wrap(data: T) -> Self {
+        JsonData { data }
+    }
+}
+
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize)]
 pub struct Bookmark {
     pub id: i32,
