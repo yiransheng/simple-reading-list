@@ -90,4 +90,21 @@ mod tests {
 
         assert_eq!(tag_set, expected);
     }
+
+    #[test]
+    fn test_bookmark_de() {
+        let json = r#"{
+	  "id": 2,
+	  "created": "2019-06-02T10:39:20.840523",
+	  "title": "second",
+	  "url": "http://ok",
+	  "body": "world",
+	  "tags": [
+	    "bar",
+	    "foo"
+	  ]
+	}"#;
+        let bookmark: Result<Bookmark, _> = serde_json::from_str(json);
+        assert!(bookmark.is_ok());
+    }
 }

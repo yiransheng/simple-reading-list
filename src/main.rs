@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate diesel;
+use std::env;
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use dotenv::dotenv;
-use std::env;
 
 use crate::models::Bookmark;
 
@@ -29,8 +29,7 @@ fn main() {
         .load::<Bookmark>(&connection)
         .expect("Error loading posts, lol");
 
-    for post in results {
-        println!("{}", post.title);
-        println!("{:?}", post.tags);
+    for bookmark in results {
+        println!("{}", serde_json::to_string_pretty(&bookmark).unwrap());
     }
 }
