@@ -17,6 +17,7 @@ pub struct User {
     pub created: NaiveDateTime,
     pub email: String,
     pub password: String,
+    pub is_admin: bool,
 }
 
 #[derive(Insertable, AsChangeset)]
@@ -31,6 +32,15 @@ pub struct NewUser<'a> {
 pub struct SlimUser {
     pub email: String,
     pub is_admin: bool,
+}
+
+impl From<User> for SlimUser {
+    fn from(user: User) -> Self {
+        SlimUser {
+            email: user.email,
+            is_admin: user.is_admin,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

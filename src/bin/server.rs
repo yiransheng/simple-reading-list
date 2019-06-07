@@ -2,16 +2,17 @@ use std::env;
 
 use actix::prelude::*;
 use actix_web::{
-    guard, http, middleware, web, App, Error, HttpRequest, HttpResponse,
-    HttpServer,
+    error::ResponseError, guard, http, middleware, web, App, Error,
+    HttpRequest, HttpResponse, HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
 use futures::Future;
+use serde_json::json;
 
-use common::db::{DbExecutor, QueryRecent};
-use common::utils::admin_guard;
+use common::db::{AuthData, DbExecutor, QueryRecent};
+use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -35,6 +36,22 @@ fn query_recent(
         })
 }
 
+fn login(
+    auth_data: web::Json<AuthData>,
+    db: web::Data<Addr<DbExecutor>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    db.send(auth_data.into_inner())
+        .from_err()
+        .and_then(move |res| match res {
+            Ok(user) => {
+                let token = create_token(&user)?;
+                let token = json!({ "token": token });
+                Ok(HttpResponse::Ok().json(token))
+            }
+            Err(err) => Ok(err.error_response()),
+        })
+}
+
 fn main() {
     dotenv().ok();
 
@@ -46,13 +63,19 @@ fn main() {
     // Start http server
     HttpServer::new(move || {
         App::new().data(addr.clone()).service(
-            web::scope("/api").service(
-                web::resource("recent").route(
-                    web::get()
-                        // .guard(guard::fn_guard(admin_guard))
-                        .to_async(query_recent),
+            web::scope("/api")
+                .service(
+                    web::resource("auth")
+                        // .route(web::get().to_async(whoami))
+                        .route(web::post().to_async(login)),
+                )
+                .service(
+                    web::resource("bookmarks").route(
+                        web::get()
+                            .guard(guard::fn_guard(admin_guard))
+                            .to_async(query_recent),
+                    ),
                 ),
-            ),
         )
     })
     .bind("127.0.0.1:8080")
