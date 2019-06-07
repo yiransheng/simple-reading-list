@@ -12,6 +12,7 @@ use futures::Future;
 use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
+use common::models::NewBookmark;
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
@@ -33,6 +34,18 @@ fn query_recent(
         .and_then(|res| match res {
             Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
             _ => Ok(HttpResponse::InternalServerError().into()),
+        })
+}
+
+fn create_bookmark(
+    bookmark: web::Json<NewBookmark>,
+    db: web::Data<Addr<DbExecutor>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    db.send(bookmark.into_inner())
+        .from_err()
+        .and_then(move |res| match res {
+            Ok(created) => Ok(HttpResponse::Ok().json(created)),
+            Err(err) => Ok(err.error_response()),
         })
 }
 
@@ -70,11 +83,13 @@ fn main() {
                         .route(web::post().to_async(login)),
                 )
                 .service(
-                    web::resource("bookmarks").route(
-                        web::get()
-                            .guard(guard::fn_guard(admin_guard))
-                            .to_async(query_recent),
-                    ),
+                    web::resource("bookmarks")
+                        .route(
+                            web::post()
+                                .guard(guard::fn_guard(admin_guard))
+                                .to_async(create_bookmark),
+                        )
+                        .route(web::get().to_async(query_recent)),
                 ),
         )
     })

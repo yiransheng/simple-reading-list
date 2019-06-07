@@ -9,7 +9,7 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use serde_derive::*;
 
-use crate::schema::users;
+use crate::schema::{bookmarks, users};
 
 #[derive(Debug, Clone, Queryable)]
 pub struct User {
@@ -59,6 +59,15 @@ pub struct Bookmark {
     pub tags: TagSet,
 }
 
+#[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
+#[table_name = "bookmarks"]
+pub struct NewBookmark {
+    pub title: String,
+    pub url: String,
+    pub body: String,
+    pub tags: TagSet,
+}
+
 #[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSet(HashSet<String>);
 
@@ -95,6 +104,8 @@ fn seek_json_start(bytes: &[u8]) -> Option<&[u8]> {
 
 impl ToSql<Jsonb, Pg> for TagSet {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        // prefix jsonb version num.
+        out.write(&[1])?;
         serde_json::to_writer(out, self)
             .map(|_| IsNull::No)
             .map_err(Into::into)

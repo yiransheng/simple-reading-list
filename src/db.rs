@@ -6,7 +6,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use serde_derive::*;
 
 use crate::error::ServiceError;
-use crate::models::{Bookmark, PageData, SlimUser, User};
+use crate::models::{Bookmark, NewBookmark, PageData, SlimUser, User};
 
 pub struct DbExecutor(pub Pool<ConnectionManager<PgConnection>>);
 
@@ -75,5 +75,31 @@ impl Handler<AuthData> for DbExecutor {
         Err(ServiceError::BadRequest(
             "Username and Password don't match".into(),
         ))
+    }
+}
+
+impl Message for NewBookmark {
+    type Result = Result<Bookmark, ServiceError>;
+}
+
+impl Handler<NewBookmark> for DbExecutor {
+    type Result = Result<Bookmark, ServiceError>;
+    fn handle(
+        &mut self,
+        msg: NewBookmark,
+        _: &mut Self::Context,
+    ) -> Self::Result {
+        use crate::schema::bookmarks::dsl::*;
+        let conn: &PgConnection = &self.0.get().unwrap();
+
+        let mut items = diesel::insert_into(bookmarks)
+            .values(&msg)
+            .get_results(conn)
+            .map_err(|err| {
+                eprintln!("{:?}", err);
+                err
+            })?;
+
+        items.pop().ok_or_else(|| ServiceError::InternalServerError)
     }
 }
