@@ -44,7 +44,7 @@ fn create_bookmark(
     db.send(bookmark.into_inner())
         .from_err()
         .and_then(move |res| match res {
-            Ok(created) => Ok(HttpResponse::Ok().json(created)),
+            Ok(created) => Ok(HttpResponse::Created().json(created)),
             Err(err) => Ok(err.error_response()),
         })
 }

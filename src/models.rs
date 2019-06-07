@@ -43,13 +43,13 @@ impl From<User> for SlimUser {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PageData<T> {
     pub data: Vec<T>,
     pub total_pages: i64,
 }
 
-#[derive(Debug, Clone, Queryable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Queryable, Serialize)]
 pub struct Bookmark {
     pub id: i32,
     pub created: NaiveDateTime,
@@ -59,7 +59,7 @@ pub struct Bookmark {
     pub tags: TagSet,
 }
 
-#[derive(Debug, Clone, Insertable, Serialize, Deserialize)]
+#[derive(Debug, Clone, Insertable, Deserialize)]
 #[table_name = "bookmarks"]
 pub struct NewBookmark {
     pub title: String,
@@ -68,8 +68,66 @@ pub struct NewBookmark {
     pub tags: TagSet,
 }
 
+#[derive(Debug, Clone, Queryable, Serialize)]
+pub struct BookmarkDoc {
+    pub id: i32,
+    pub created: NaiveDateTime,
+    pub title: String,
+    pub url: String,
+    pub body: String,
+    pub tags: String,
+}
+
+impl From<Bookmark> for BookmarkDoc {
+    fn from(b: Bookmark) -> Self {
+        let Bookmark {
+            id,
+            created,
+            title,
+            url,
+            body,
+            tags,
+        } = b;
+        BookmarkDoc {
+            id,
+            created,
+            title,
+            url,
+            body,
+            tags: tags.join(" "),
+        }
+    }
+}
+
+impl BookmarkDoc {
+    pub fn to_bookmark_lossy(self) -> Bookmark {
+        let BookmarkDoc {
+            id,
+            created,
+            title,
+            url,
+            body,
+            ..
+        } = self;
+        Bookmark {
+            id,
+            created,
+            title,
+            url,
+            body,
+            tags: TagSet::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TagSet(HashSet<String>);
+
+impl TagSet {
+    fn join(&self, sep: &str) -> String {
+        itertools::join(self.0.iter(), sep)
+    }
+}
 
 // traits implements below
 
@@ -129,7 +187,7 @@ mod tests {
 
     #[test]
     fn test_from_sql() {
-        // first byte in json is 1 :(
+        // first byte in json is jsonb ver number
         let mut json: Vec<u8> = vec![1];
         json.extend(r#"["foo", "bar"]"#.as_bytes());
 
@@ -140,6 +198,12 @@ mod tests {
         );
 
         assert_eq!(tag_set, expected);
+    }
+
+    #[test]
+    fn test_sql_round_trip() {
+        // TODO: construct Pg Output
+        assert!(true);
     }
 
     #[test]
