@@ -2,7 +2,8 @@ use std::env;
 
 use actix::prelude::*;
 use actix_web::{
-    http, middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer,
+    guard, http, middleware, web, App, Error, HttpRequest, HttpResponse,
+    HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
@@ -10,6 +11,7 @@ use dotenv::dotenv;
 use futures::Future;
 
 use common::db::{DbExecutor, QueryRecent};
+use common::utils::admin_guard;
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -43,14 +45,15 @@ fn main() {
         SyncArbiter::start(4, move || DbExecutor(pool.clone()));
     // Start http server
     HttpServer::new(move || {
-        App::new()
-            .data(addr.clone())
-            .service(
-                web::scope("/api").service(
-                    web::resource("recent")
-                        .route(web::get().to_async(query_recent)),
+        App::new().data(addr.clone()).service(
+            web::scope("/api").service(
+                web::resource("recent").route(
+                    web::get()
+                        // .guard(guard::fn_guard(admin_guard))
+                        .to_async(query_recent),
                 ),
-            )
+            ),
+        )
     })
     .bind("127.0.0.1:8080")
     .unwrap()

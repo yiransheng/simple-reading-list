@@ -27,6 +27,12 @@ pub struct NewUser<'a> {
     pub is_admin: bool,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SlimUser {
+    pub email: String,
+    pub is_admin: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageData<T> {
     pub data: Vec<T>,

@@ -53,7 +53,7 @@ fn create_admin_user<'a>(
         .on_conflict(email)
         .do_update()
         .set(&user)
-        .execute(conn);
+        .execute(conn)?;
 
     Ok(())
 }
