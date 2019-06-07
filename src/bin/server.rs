@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate diesel;
-
 use std::env;
 
 use actix::prelude::*;
@@ -12,12 +9,7 @@ use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
 use futures::Future;
 
-use crate::db::{DbExecutor, QueryRecent};
-use crate::models::JsonData;
-
-mod db;
-mod models;
-mod schema;
+use common::db::{DbExecutor, QueryRecent};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -36,9 +28,7 @@ fn query_recent(
     db.send(QueryRecent(25))
         .from_err()
         .and_then(|res| match res {
-            Ok(bookmarks) => {
-                Ok(HttpResponse::Ok().json(JsonData::wrap(bookmarks)))
-            }
+            Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
 }

@@ -9,14 +9,28 @@ use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use serde_derive::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JsonData<T> {
-    data: T,
+use crate::schema::users;
+
+#[derive(Debug, Clone, Queryable)]
+pub struct User {
+    pub id: i32,
+    pub created: NaiveDateTime,
+    pub email: String,
+    pub password: String,
 }
-impl<T> JsonData<T> {
-    pub fn wrap(data: T) -> Self {
-        JsonData { data }
-    }
+
+#[derive(Insertable, AsChangeset)]
+#[table_name = "users"]
+pub struct NewUser<'a> {
+    pub email: &'a str,
+    pub password: &'a str,
+    pub is_admin: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PageData<T> {
+    pub data: Vec<T>,
+    pub total_pages: i64,
 }
 
 #[derive(Debug, Clone, Queryable, Serialize, Deserialize)]

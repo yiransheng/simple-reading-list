@@ -1,5 +1,5 @@
 -- Create posts table
-CREATE TABLE Bookmarks (
+CREATE TABLE bookmarks (
   id SERIAL PRIMARY KEY,
   created TIMESTAMP NOT NULL default now(),
   title VARCHAR NOT NULL,
