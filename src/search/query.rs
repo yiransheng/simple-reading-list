@@ -5,8 +5,20 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum Query {
     Boolean { bool: BoolQuery },
+    Exact(ExactTerm),
     Fuzzy(FuzzyQuery),
     Phrase(PhraseQuery),
+}
+
+#[derive(Serialize, Debug, PartialEq, Clone)]
+pub struct ExactTerm {
+    term: KeyValue<String>,
+}
+
+impl ExactTerm {
+    pub fn new(term: KeyValue<String>) -> Self {
+        Self { term }
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
@@ -130,8 +142,11 @@ impl BoolQueryBuilder {
         self.__must_not.push(q);
         self
     }
-    pub fn should(mut self, q: Query) -> Self {
-        self.__should.push(q);
+    pub fn should<I>(mut self, q: I) -> Self
+    where
+        I: IntoIterator<Item = Query>,
+    {
+        self.__should.extend(q.into_iter());
         self
     }
     pub fn minimum_should_match(mut self, s: u64) -> Self {
@@ -140,6 +155,34 @@ impl BoolQueryBuilder {
     }
     pub fn boost(mut self, b: f64) -> Self {
         self.__boost = Some(b);
+        self
+    }
+}
+
+pub struct ExactQueryBuilder {
+    field: Option<String>,
+    term: Option<String>,
+    // TODO: offsets
+}
+impl ExactQueryBuilder {
+    pub fn new() -> Self {
+        Self {
+            field: None,
+            term: None,
+        }
+    }
+    pub fn build(self) -> Query {
+        Query::Exact(ExactTerm::new(KeyValue {
+            field: self.field.unwrap(),
+            value: self.term.unwrap(),
+        }))
+    }
+    pub fn with_field(mut self, f: String) -> Self {
+        self.field = Some(f);
+        self
+    }
+    pub fn with_term(mut self, term: String) -> Self {
+        self.term = Some(term);
         self
     }
 }
@@ -209,7 +252,7 @@ impl FuzzyQueryBuilder {
         self.field = Some(f);
         self
     }
-    pub fn with_value(mut self, v: String) -> Self {
+    pub fn with_term(mut self, v: String) -> Self {
         self.value = Some(v);
         self
     }
@@ -232,7 +275,7 @@ mod tests {
     fn test_ser_fuzzy() {
         let q = FuzzyQueryBuilder::new()
             .with_field("test_text".to_owned())
-            .with_value("document".to_owned())
+            .with_term("document".to_owned())
             .build();
 
         let s = serde_json::to_string(&q).unwrap();

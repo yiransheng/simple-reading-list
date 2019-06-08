@@ -14,7 +14,7 @@ use serde_json::json;
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark};
-use common::search::SearchClient;
+use common::search::{Search, SearchClient};
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
@@ -37,6 +37,17 @@ fn query_recent(
             Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
+}
+
+fn search_bookmark(
+    search_client: web::Data<SearchClient>,
+    search: web::Query<Search>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    search_client.query_docs(&search.q).map(|bytes| {
+        HttpResponse::Ok()
+            .header("Content-Type", "application/json")
+            .body(bytes)
+    })
 }
 
 fn create_bookmark(
@@ -112,6 +123,10 @@ fn main() {
                                     .to_async(create_bookmark),
                             )
                             .route(web::get().to_async(query_recent)),
+                    )
+                    .service(
+                        web::resource("bookmarks/search")
+                            .route(web::get().to_async(search_bookmark)),
                     ),
             )
     })
