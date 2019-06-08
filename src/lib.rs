@@ -6,4 +6,5 @@ pub mod error;
 pub mod models;
 pub mod pagination;
 pub mod schema;
+pub mod search;
 pub mod utils;
