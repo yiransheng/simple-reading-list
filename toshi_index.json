@@ -1,0 +1,59 @@
+[
+  {
+    "name": "id",
+    "type": "i64",
+    "options": {
+      "indexed": false,
+      "stored": true
+    }
+  },
+  {
+    "name": "created",
+    "type": "text",
+    "options": {
+      "indexed": false,
+      "stored": true
+    }
+  },
+  {
+    "name": "title",
+    "type": "text",
+    "options": {
+      "indexing": {
+        "record": "position",
+        "tokenizer": "default"
+      },
+      "stored": true
+    }
+  },
+  {
+    "name": "url",
+    "type": "text",
+    "options": {
+      "indexed": false,
+      "stored": true
+    }
+  },
+  {
+    "name": "body",
+    "type": "text",
+    "options": {
+      "indexing": {
+        "record": "position",
+        "tokenizer": "default"
+      },
+      "stored": true
+    }
+  },
+  {
+    "name": "tags",
+    "type": "text",
+    "options": {
+      "indexing": {
+        "record": "position",
+        "tokenizer": "default"
+      },
+      "stored": true
+    }
+  }
+]
