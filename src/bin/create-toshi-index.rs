@@ -8,7 +8,7 @@ use actix_web::client::{Client, SendRequestError};
 use actix_web::error::ResponseError;
 use actix_web::http::header::CONTENT_TYPE;
 use derive_more::*;
-use futures::future::{lazy, Future, Stream};
+use futures::future::{lazy, Future};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]

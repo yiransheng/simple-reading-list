@@ -49,7 +49,7 @@ pub struct PageData<T> {
     pub total_pages: i64,
 }
 
-#[derive(Debug, Clone, Queryable, Serialize)]
+#[derive(Debug, Clone, Queryable, Deserialize, Serialize)]
 pub struct Bookmark {
     pub id: i32,
     pub created: NaiveDateTime,

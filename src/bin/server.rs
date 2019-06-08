@@ -8,11 +8,13 @@ use actix_web::{
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
-use futures::Future;
+use futures::{future, Future};
 use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
-use common::models::NewBookmark;
+use common::error::ServiceError;
+use common::models::{Bookmark, BookmarkDoc, NewBookmark};
+use common::search::SearchClient;
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
@@ -40,9 +42,26 @@ fn query_recent(
 fn create_bookmark(
     bookmark: web::Json<NewBookmark>,
     db: web::Data<Addr<DbExecutor>>,
+    search_client: web::Data<SearchClient>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     db.send(bookmark.into_inner())
         .from_err()
+        .and_then::<_, Box<Future<Item = Result<Bookmark, ServiceError>, Error = Error>>>(move |created| {
+            match created {
+                Ok(created) => {
+                    let doc: BookmarkDoc = created.clone().into();
+                    Box::new(
+                        search_client
+                            .insert_doc(&doc)
+                            .from_err()
+                            .map(move |_| Ok(created)),
+                    )
+                }
+                Err(_) => {
+                    Box::new(future::ok(Err(ServiceError::InternalServerError)))
+                }
+            }
+        })
         .and_then(move |res| match res {
             Ok(created) => Ok(HttpResponse::Created().json(created)),
             Err(err) => Ok(err.error_response()),
@@ -75,23 +94,26 @@ fn main() {
         SyncArbiter::start(4, move || DbExecutor(pool.clone()));
     // Start http server
     HttpServer::new(move || {
-        App::new().data(addr.clone()).service(
-            web::scope("/api")
-                .service(
-                    web::resource("auth")
-                        // .route(web::get().to_async(whoami))
-                        .route(web::post().to_async(login)),
-                )
-                .service(
-                    web::resource("bookmarks")
-                        .route(
-                            web::post()
-                                .guard(guard::fn_guard(admin_guard))
-                                .to_async(create_bookmark),
-                        )
-                        .route(web::get().to_async(query_recent)),
-                ),
-        )
+        App::new()
+            .data(addr.clone())
+            .data(SearchClient::new())
+            .service(
+                web::scope("/api")
+                    .service(
+                        web::resource("auth")
+                            // .route(web::get().to_async(whoami))
+                            .route(web::post().to_async(login)),
+                    )
+                    .service(
+                        web::resource("bookmarks")
+                            .route(
+                                web::post()
+                                    // .guard(guard::fn_guard(admin_guard))
+                                    .to_async(create_bookmark),
+                            )
+                            .route(web::get().to_async(query_recent)),
+                    ),
+            )
     })
     .bind("127.0.0.1:8080")
     .unwrap()
