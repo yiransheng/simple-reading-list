@@ -1,11 +1,8 @@
 use actix_web::client::Client;
-use actix_web::error::ResponseError;
 use actix_web::http::{header::CONTENT_TYPE, uri, StatusCode};
-use actix_web::web::Bytes;
 use actix_web::Error;
-use futures::future::{lazy, Future};
+use futures::future::Future;
 use serde_derive::*;
-use serde_json::json;
 
 mod index;
 mod query;
