@@ -13,7 +13,7 @@ mod query_parser;
 
 use self::query_parser::QueryParser;
 use crate::error::ServiceError;
-use crate::models::BookmarkDoc;
+use crate::models::{BookmarkDoc, SearchResults};
 
 #[derive(Deserialize)]
 pub struct Search {
@@ -61,7 +61,7 @@ impl SearchClient {
     pub fn query_docs(
         &self,
         q: &str,
-    ) -> impl Future<Item = Bytes, Error = Error> {
+    ) -> impl Future<Item = SearchResults, Error = Error> {
         eprintln!("Query: {}", q);
         let q = QueryParser::new(q).parse().unwrap();
         eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
@@ -75,7 +75,11 @@ impl SearchClient {
             .from_err()
             .and_then(|mut resp| {
                 eprintln!("Query: {:?}", resp);
-                resp.body().from_err()
+                // toshi response does not have correct Content-Type header
+                // so cannot use .json() here
+                resp.body().from_err().and_then(|body| {
+                    serde_json::from_slice(&body).map_err(Error::from)
+                })
             })
     }
 

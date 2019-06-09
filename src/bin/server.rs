@@ -43,11 +43,9 @@ fn search_bookmark(
     search_client: web::Data<SearchClient>,
     search: web::Query<Search>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    search_client.query_docs(&search.q).map(|bytes| {
-        HttpResponse::Ok()
-            .header("Content-Type", "application/json")
-            .body(bytes)
-    })
+    search_client
+        .query_docs(&search.q)
+        .map(|results| HttpResponse::Ok().json(results))
 }
 
 fn create_bookmark(

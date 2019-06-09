@@ -54,6 +54,17 @@ pub struct PageData<T> {
     pub total_pages: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResults {
+    hits: u32,
+    docs: Vec<ScoredDoc>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScoredDoc {
+    score: f64,
+    doc: BookmarkDoc,
+}
+
 #[derive(Debug, Clone, Queryable, Deserialize, Serialize, PartialEq)]
 pub struct Bookmark {
     pub id: i32,
@@ -405,6 +416,7 @@ mod tests {
 	  "body": "world",
 	  "tags": []
 	}"#;
+
         let json2 = r#"{
 	  "id": [2],
 	  "created": ["2019-06-02T10:39:20.840523"],
