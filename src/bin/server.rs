@@ -16,33 +16,8 @@ use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark};
 use common::search::{Search, SearchClient};
-use common::templates::{BookmarkItem, IntoBookmarkData};
+use common::templates::{BookmarkItem, IntoBookmarkData, PageTemplate};
 use common::utils::{admin_guard, create_token};
-
-struct Chunks<I> {
-    s: Vec<u8>,
-    iter: I,
-}
-
-impl<T, I> Iterator for Chunks<I>
-where
-    I: Iterator<Item = T>,
-    T: IntoBookmarkData,
-{
-    type Item = web::Bytes;
-
-    fn next(&mut self) -> Option<web::Bytes> {
-        let x = self.iter.next()?;
-        let tmpl = BookmarkItem::new(x);
-
-        self.s.clear();
-        tmpl.write_to_io(&mut self.s)
-            // TODO: handle this
-            .expect("Failed to write template");
-
-        Some(web::Bytes::from(self.s.as_slice()))
-    }
-}
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -61,17 +36,26 @@ fn recent_bookmarks(
     db.send(QueryRecent(25))
         .from_err()
         .and_then(|res| match res {
-            Ok(bookmarks) => {
-                eprintln!("Count: {}", bookmarks.data.len());
-                let chunks = Chunks {
-                    s: vec![],
-                    iter: bookmarks.data.into_iter(),
-                };
-                let stream = futures::stream::iter_ok::<_, Error>(chunks);
+            Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
+            _ => Ok(HttpResponse::InternalServerError().into()),
+        })
+}
 
-                Ok(HttpResponse::Ok()
-                    .header("Content-Type", "text/html")
-                    .streaming(stream))
+fn recent_bookmarks_html(
+    db: web::Data<Addr<DbExecutor>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    db.send(QueryRecent(25))
+        .from_err()
+        .and_then(|res| match res {
+            Ok(bookmarks) => {
+                let items = bookmarks.data.into_iter().map(BookmarkItem::new);
+                let page = PageTemplate::new(items);
+                match page.into_string() {
+                    Ok(body) => Ok(HttpResponse::Ok()
+                        .content_type("text/html")
+                        .body(body)),
+                    _ => Ok(HttpResponse::InternalServerError().into()),
+                }
             }
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
@@ -162,6 +146,10 @@ fn main() {
                         web::resource("bookmarks/search")
                             .route(web::get().to_async(search_bookmark)),
                     ),
+            )
+            .service(
+                web::resource("/")
+                    .route(web::get().to_async(recent_bookmarks_html)),
             )
     })
     .bind("127.0.0.1:8080")

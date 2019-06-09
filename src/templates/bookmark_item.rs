@@ -50,13 +50,13 @@ impl RenderOnce for BookmarkItem {
             ..
         } = self.data.into_bookmark();
         tmpl << html! {
-            li {
-                div {
+            div(class = "link-item") {
+                h2 {
                     a(href = url) {
                       : title
                     }
                 }
-                div : body
+                p : body
             }
         };
     }

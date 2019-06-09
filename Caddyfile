@@ -1,0 +1,7 @@
+localhost:3000/static {
+  root ./assets
+}
+
+localhost:3000 {
+  proxy / localhost:8080
+}
