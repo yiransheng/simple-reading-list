@@ -56,13 +56,13 @@ pub struct PageData<T> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResults {
-    hits: u32,
-    docs: Vec<ScoredDoc>,
+    pub hits: u32,
+    pub docs: Vec<ScoredDoc>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoredDoc {
-    score: f64,
-    doc: BookmarkDoc,
+    pub score: f64,
+    pub doc: BookmarkDoc,
 }
 
 #[derive(Debug, Clone, Queryable, Deserialize, Serialize, PartialEq)]

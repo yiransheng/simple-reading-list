@@ -43,7 +43,7 @@ impl Handler<QueryRecent> for DbExecutor {
         bookmarks
             .order(created.desc())
             .paginate(1)
-            .per_page(1)
+            .per_page(3)
             .load_and_count_pages::<Bookmark>(conn)
             .map_err(Into::into)
     }

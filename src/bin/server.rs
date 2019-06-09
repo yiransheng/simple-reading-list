@@ -2,20 +2,47 @@ use std::env;
 
 use actix::prelude::*;
 use actix_web::{
-    error::ResponseError, guard, http, middleware, web, App, Error,
+    body::Body, error::ResponseError, guard, http, middleware, web, App, Error,
     HttpRequest, HttpResponse, HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
 use futures::{future, Future};
+use horrorshow::Template;
 use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark};
 use common::search::{Search, SearchClient};
+use common::templates::{BookmarkItem, IntoBookmarkData};
 use common::utils::{admin_guard, create_token};
+
+struct Chunks<I> {
+    s: Vec<u8>,
+    iter: I,
+}
+
+impl<T, I> Iterator for Chunks<I>
+where
+    I: Iterator<Item = T>,
+    T: IntoBookmarkData,
+{
+    type Item = web::Bytes;
+
+    fn next(&mut self) -> Option<web::Bytes> {
+        let x = self.iter.next()?;
+        let tmpl = BookmarkItem::new(x);
+
+        self.s.clear();
+        tmpl.write_to_io(&mut self.s)
+            // TODO: handle this
+            .expect("Failed to write template");
+
+        Some(web::Bytes::from(self.s.as_slice()))
+    }
+}
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -34,7 +61,18 @@ fn recent_bookmarks(
     db.send(QueryRecent(25))
         .from_err()
         .and_then(|res| match res {
-            Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
+            Ok(bookmarks) => {
+                eprintln!("Count: {}", bookmarks.data.len());
+                let chunks = Chunks {
+                    s: vec![],
+                    iter: bookmarks.data.into_iter(),
+                };
+                let stream = futures::stream::iter_ok::<_, Error>(chunks);
+
+                Ok(HttpResponse::Ok()
+                    .header("Content-Type", "text/html")
+                    .streaming(stream))
+            }
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
 }
@@ -45,7 +83,7 @@ fn search_bookmark(
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     search_client
         .query_docs(&search.q)
-        .map(|results| HttpResponse::Ok().json(results))
+        .map(move |mut results| HttpResponse::Ok().json(results))
 }
 
 fn create_bookmark(

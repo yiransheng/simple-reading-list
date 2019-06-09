@@ -1,6 +1,6 @@
 use actix_web::client::Client;
 use actix_web::http::{header::CONTENT_TYPE, uri, StatusCode};
-use actix_web::Error;
+use actix_web::{web::Bytes, Error};
 use futures::future::Future;
 use serde_derive::*;
 
