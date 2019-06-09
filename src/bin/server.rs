@@ -58,6 +58,7 @@ fn create_bookmark(
         .and_then::<_, Box<Future<Item = Result<Bookmark, _>, Error = Error>>>(
             move |created| match created {
                 Ok(created) => {
+                    eprintln!("DB ok");
                     let doc: BookmarkDoc = created.clone().into();
                     Box::new(
                         search_client.insert_doc(doc).map(move |_| Ok(created)),

@@ -1,6 +1,6 @@
 use actix_web::client::Client;
 use actix_web::error::ResponseError;
-use actix_web::http::{header::CONTENT_TYPE, uri};
+use actix_web::http::{header::CONTENT_TYPE, uri, StatusCode};
 use actix_web::web::Bytes;
 use actix_web::Error;
 use futures::future::{lazy, Future};
@@ -41,21 +41,21 @@ impl SearchClient {
     pub fn insert_doc(
         &self,
         doc: BookmarkDoc,
-    ) -> impl Future<Item = (), Error = Error> {
+    ) -> impl Future<Item = Result<(), ServiceError>, Error = Error> {
         #[derive(Serialize)]
         struct InsertPayload<D> {
             options: InsertOptions,
-            doc: D,
+            document: D,
         }
         #[derive(Serialize)]
         struct InsertOptions {
             commit: bool,
         }
         impl<D> InsertPayload<D> {
-            fn new(doc: D) -> Self {
+            fn new(document: D) -> Self {
                 Self {
                     options: InsertOptions { commit: true },
-                    doc,
+                    document,
                 }
             }
         }
@@ -64,11 +64,13 @@ impl SearchClient {
             .header(CONTENT_TYPE, "application/json")
             .send_json(&InsertPayload::new(doc))
             .from_err()
-            .and_then(|mut resp| {
+            .map(|resp| {
                 eprintln!("Insert: {:?}", resp);
-                resp.body().from_err().map(|b| {
-                    eprintln!("{:?}", b);
-                })
+                if resp.status() == StatusCode::CREATED {
+                    Ok(())
+                } else {
+                    Err(ServiceError::InternalServerError)
+                }
             })
     }
 
