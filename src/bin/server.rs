@@ -28,7 +28,7 @@ fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
         .expect("Failed to create pool.")
 }
 
-fn query_recent(
+fn recent_bookmarks(
     db: web::Data<Addr<DbExecutor>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     db.send(QueryRecent(25))
@@ -55,22 +55,19 @@ fn create_bookmark(
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     db.send(bookmark.into_inner())
         .from_err()
-        .and_then::<_, Box<Future<Item = Result<Bookmark, ServiceError>, Error = Error>>>(move |created| {
-            match created {
+        .and_then::<_, Box<Future<Item = Result<Bookmark, _>, Error = Error>>>(
+            move |created| match created {
                 Ok(created) => {
                     let doc: BookmarkDoc = created.clone().into();
                     Box::new(
-                        search_client
-                            .insert_doc(doc)
-                            .from_err()
-                            .map(move |_| Ok(created)),
+                        search_client.insert_doc(doc).map(move |_| Ok(created)),
                     )
                 }
                 Err(_) => {
                     Box::new(future::ok(Err(ServiceError::InternalServerError)))
                 }
-            }
-        })
+            },
+        )
         .and_then(move |res| match res {
             Ok(created) => Ok(HttpResponse::Created().json(created)),
             Err(err) => Ok(err.error_response()),
@@ -120,7 +117,7 @@ fn main() {
                                     // .guard(guard::fn_guard(admin_guard))
                                     .to_async(create_bookmark),
                             )
-                            .route(web::get().to_async(query_recent)),
+                            .route(web::get().to_async(recent_bookmarks)),
                     )
                     .service(
                         web::resource("bookmarks/search")

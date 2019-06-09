@@ -41,7 +41,7 @@ impl SearchClient {
     pub fn insert_doc(
         &self,
         doc: BookmarkDoc,
-    ) -> impl Future<Item = (), Error = ServiceError> {
+    ) -> impl Future<Item = (), Error = Error> {
         #[derive(Serialize)]
         struct InsertPayload<D> {
             options: InsertOptions,
@@ -63,14 +63,12 @@ impl SearchClient {
             .put(&self.insert_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
             .send_json(&InsertPayload::new(doc))
-            .map_err(|_| ServiceError::InternalServerError)
+            .from_err()
             .and_then(|mut resp| {
                 eprintln!("Insert: {:?}", resp);
-                resp.body()
-                    .map_err(|_| ServiceError::InternalServerError)
-                    .map(|b| {
-                        eprintln!("{:?}", b);
-                    })
+                resp.body().from_err().map(|b| {
+                    eprintln!("{:?}", b);
+                })
             })
     }
 
@@ -78,19 +76,25 @@ impl SearchClient {
         &self,
         q: &str,
     ) -> impl Future<Item = SearchResults, Error = Error> {
+        #[derive(Serialize)]
+        struct QueryPayload<Q> {
+            query: Q,
+            limit: u32,
+        }
+
         eprintln!("Query: {}", q);
         let q = QueryParser::new(q).parse().unwrap();
         eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
-            .put(&self.query_doc_endpoint)
+            .post(&self.query_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
-            .send_json(&json!({
-                "query": &q,
-                "limit": 25,
-            }))
+            .send_json(&QueryPayload {
+                query: q,
+                limit: 25,
+            })
             .from_err()
             .and_then(|mut resp| {
-                eprintln!("Query: {:?}", resp);
+                eprintln!("Results: {:?}", resp);
                 // toshi response does not have correct Content-Type header
                 // so cannot use .json() here
                 resp.body().from_err().and_then(|body| {
