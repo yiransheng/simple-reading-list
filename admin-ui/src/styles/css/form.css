@@ -1,0 +1,29 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:500,300);
+.input_fieldset {
+  margin: 0 0 1.375rem;
+  padding: 0;
+  border: none; }
+  .input_fieldset > label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: 1.375rem;
+    margin: 0; }
+  .input_fieldset > input[type="text"],
+  .input_fieldset > input[type="password"] {
+    display: block;
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.34375rem 0.5rem;
+    background-color: #fafaff;
+    border-radius: .15rem;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    outline: none;
+    transition: background-color 0.4s, border-color 0.4s, border-radius 0.5s; }
+    .input_fieldset > input[type="text"]:focus,
+    .input_fieldset > input[type="password"]:focus {
+      border-color: rgba(0, 0, 0, 0.5);
+      background-color: #fff;
+      box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.2);
+      border-radius: .25rem; }

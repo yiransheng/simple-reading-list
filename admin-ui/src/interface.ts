@@ -12,7 +12,6 @@ export interface Err<T> {
   value: T;
 }
 
-
 export interface AuthData {
   email: string;
   password: string;
