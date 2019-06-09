@@ -22,7 +22,8 @@ pub struct Search {
 
 pub struct SearchClient {
     rest_client: Client,
-    toshi_host: String,
+    insert_doc_endpoint: uri::Uri,
+    query_doc_endpoint: uri::Uri,
 }
 
 impl SearchClient {
@@ -32,21 +33,36 @@ impl SearchClient {
 
         SearchClient {
             rest_client: Client::default(),
-            toshi_host,
+            insert_doc_endpoint: insert_doc_endpoint(toshi_host.as_ref()),
+            query_doc_endpoint: query_doc_endpoint(toshi_host.as_ref()),
         }
     }
 
     pub fn insert_doc(
         &self,
-        doc: &BookmarkDoc,
+        doc: BookmarkDoc,
     ) -> impl Future<Item = (), Error = ServiceError> {
+        #[derive(Serialize)]
+        struct InsertPayload<D> {
+            options: InsertOptions,
+            doc: D,
+        }
+        #[derive(Serialize)]
+        struct InsertOptions {
+            commit: bool,
+        }
+        impl<D> InsertPayload<D> {
+            fn new(doc: D) -> Self {
+                Self {
+                    options: InsertOptions { commit: true },
+                    doc,
+                }
+            }
+        }
         self.rest_client
-            .put(self.insert_doc_endpoint())
+            .put(&self.insert_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
-            .send_json(&json!({
-                "options": { "commit": true },
-                "document": doc
-            }))
+            .send_json(&InsertPayload::new(doc))
             .map_err(|_| ServiceError::InternalServerError)
             .and_then(|mut resp| {
                 eprintln!("Insert: {:?}", resp);
@@ -66,7 +82,7 @@ impl SearchClient {
         let q = QueryParser::new(q).parse().unwrap();
         eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
-            .post(self.query_doc_endpoint())
+            .put(&self.query_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
             .send_json(&json!({
                 "query": &q,
@@ -82,23 +98,23 @@ impl SearchClient {
                 })
             })
     }
+}
 
-    fn insert_doc_endpoint(&self) -> uri::Uri {
-        uri::Builder::new()
-            .scheme("http")
-            .authority::<&str>(self.toshi_host.as_ref())
-            // LOCAL Toshi workaround:...
-            .path_and_query("/bookmarks/_add")
-            .build()
-            .expect("Invalid endpoint")
-    }
+fn insert_doc_endpoint(toshi_host: &str) -> uri::Uri {
+    uri::Builder::new()
+        .scheme("http")
+        .authority(toshi_host)
+        // LOCAL Toshi workaround:...
+        .path_and_query("/bookmarks/_add")
+        .build()
+        .expect("Invalid endpoint")
+}
 
-    fn query_doc_endpoint(&self) -> uri::Uri {
-        uri::Builder::new()
-            .scheme("http")
-            .authority::<&str>(self.toshi_host.as_ref())
-            .path_and_query("/bookmarks")
-            .build()
-            .expect("Invalid endpoint")
-    }
+fn query_doc_endpoint(toshi_host: &str) -> uri::Uri {
+    uri::Builder::new()
+        .scheme("http")
+        .authority(toshi_host)
+        .path_and_query("/bookmarks")
+        .build()
+        .expect("Invalid endpoint")
 }

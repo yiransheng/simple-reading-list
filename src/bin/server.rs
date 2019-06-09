@@ -61,7 +61,7 @@ fn create_bookmark(
                     let doc: BookmarkDoc = created.clone().into();
                     Box::new(
                         search_client
-                            .insert_doc(&doc)
+                            .insert_doc(doc)
                             .from_err()
                             .map(move |_| Ok(created)),
                     )
