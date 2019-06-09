@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::fmt;
 use std::io::Write;
+use std::marker::PhantomData;
 
 use chrono::naive::NaiveDateTime;
 use diesel::deserialize::{self, FromSql};
@@ -7,6 +9,9 @@ use diesel::not_none;
 use diesel::pg::types::sql_types::Jsonb;
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
+use serde::de::{
+    self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor,
+};
 use serde_derive::*;
 
 use crate::schema::{bookmarks, users};
@@ -49,7 +54,7 @@ pub struct PageData<T> {
     pub total_pages: i64,
 }
 
-#[derive(Debug, Clone, Queryable, Deserialize, Serialize)]
+#[derive(Debug, Clone, Queryable, Deserialize, Serialize, PartialEq)]
 pub struct Bookmark {
     pub id: i32,
     pub created: NaiveDateTime,
@@ -117,6 +122,173 @@ impl BookmarkDoc {
             body,
             tags: TagSet::default(),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for BookmarkDoc {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Id,
+            Created,
+            Title,
+            Url,
+            Body,
+            Tags,
+        }
+
+        struct UnitArray<T>(T);
+
+        impl<'de, T> Deserialize<'de> for UnitArray<T>
+        where
+            T: Deserialize<'de>,
+        {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                deserializer.deserialize_any(UnitArrayVisitor::new())
+            }
+        }
+
+        struct UnitArrayVisitor<T>(PhantomData<T>);
+
+        impl<T> UnitArrayVisitor<T> {
+            fn new() -> Self {
+                Self(PhantomData)
+            }
+        }
+
+        impl<'de, T> Visitor<'de> for UnitArrayVisitor<T>
+        where
+            T: Deserialize<'de>,
+        {
+            type Value = UnitArray<T>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Deserialize [a] as a.")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<UnitArray<T>, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let value = seq
+                    .next_element::<T>()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+
+                if seq.next_element::<T>()?.is_some() {
+                    return Err(de::Error::invalid_length(1, &self));
+                }
+
+                Ok(UnitArray(value))
+            }
+        }
+
+        struct BookmarkDocVisitor;
+
+        impl<'de> Visitor<'de> for BookmarkDocVisitor {
+            type Value = BookmarkDoc;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct BookmarkDoc")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut id: Option<UnitArray<_>> = None;
+                let mut created: Option<UnitArray<_>> = None;
+                let mut title: Option<UnitArray<_>> = None;
+                let mut url: Option<UnitArray<_>> = None;
+                let mut body: Option<UnitArray<_>> = None;
+                let mut tags: Option<UnitArray<_>> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Id => {
+                            if id.is_some() {
+                                return Err(de::Error::duplicate_field("id"));
+                            }
+                            id = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                        Field::Created => {
+                            if created.is_some() {
+                                return Err(de::Error::duplicate_field(
+                                    "created",
+                                ));
+                            }
+                            created = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                        Field::Title => {
+                            if title.is_some() {
+                                return Err(de::Error::duplicate_field(
+                                    "title",
+                                ));
+                            }
+                            title = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                        Field::Url => {
+                            if url.is_some() {
+                                return Err(de::Error::duplicate_field("url"));
+                            }
+                            url = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                        Field::Body => {
+                            if body.is_some() {
+                                return Err(de::Error::duplicate_field("body"));
+                            }
+                            body = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                        Field::Tags => {
+                            if tags.is_some() {
+                                return Err(de::Error::duplicate_field("tags"));
+                            }
+                            tags = Some(map.next_value::<UnitArray<_>>()?);
+                        }
+                    }
+                }
+                let id = id
+                    .map(|x| x.0)
+                    .ok_or_else(|| de::Error::missing_field("id"))?;
+                let created = created
+                    .map(|x| x.0)
+                    .ok_or_else(|| de::Error::missing_field("created"))?;
+                let title = title
+                    .map(|x: UnitArray<String>| x.0)
+                    .ok_or_else(|| de::Error::missing_field("title"))?;
+                let url = url
+                    .map(|x| x.0)
+                    .ok_or_else(|| de::Error::missing_field("url"))?;
+                let body = body
+                    .map(|x| x.0)
+                    .ok_or_else(|| de::Error::missing_field("body"))?;
+                let tags = tags
+                    .map(|x| x.0)
+                    .ok_or_else(|| de::Error::missing_field("tags"))?;
+                Ok(BookmarkDoc {
+                    id,
+                    created,
+                    title,
+                    url,
+                    body,
+                    tags,
+                })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] =
+            &["id", "created", "title", "url", "body", "tags"];
+
+        deserializer.deserialize_struct(
+            "BookmarkDoc",
+            FIELDS,
+            BookmarkDocVisitor,
+        )
     }
 }
 
@@ -221,5 +393,34 @@ mod tests {
 	}"#;
         let bookmark: Result<Bookmark, _> = serde_json::from_str(json);
         assert!(bookmark.is_ok());
+    }
+
+    #[test]
+    fn test_bookmark_doc_de() {
+        let json1 = r#"{
+	  "id": 2,
+	  "created": "2019-06-02T10:39:20.840523",
+	  "title": "second",
+	  "url": "http://ok",
+	  "body": "world",
+	  "tags": []
+	}"#;
+        let json2 = r#"{
+	  "id": [2],
+	  "created": ["2019-06-02T10:39:20.840523"],
+	  "title": ["second"],
+	  "url": ["http://ok"],
+	  "body": ["world"],
+	  "tags": ["foo bar"]
+	}"#;
+
+        let bookmark: Result<Bookmark, _> = serde_json::from_str(json1);
+        let bookmark_doc: Result<BookmarkDoc, _> = serde_json::from_str(json2);
+
+        assert!(bookmark_doc.is_ok());
+        assert_eq!(
+            bookmark.unwrap(),
+            bookmark_doc.unwrap().to_bookmark_lossy()
+        );
     }
 }
