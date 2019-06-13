@@ -28,10 +28,8 @@ export function createStateMachineReducer<S extends Tagged, A extends Action>(
 }
 
 export function withInitialState<S, A extends Action>(
-  seedState: S,
-  reducer: StrictReducer<S, A>
-): Reducer<S, A> {
-  return function(state: S|undefined, action: A) {
+  seedState: S): (reducer: StrictReducer<S, A>) => Reducer<S, A> {
+      return reducer => (state: S|undefined, action: A) => {
     if (state != null) {
       return reducer(state, action);
     } else {
@@ -40,3 +38,18 @@ export function withInitialState<S, A extends Action>(
   };
 }
 
+type MatchArms<S extends Tagged, U> = {
+  [Tag in S["tag"]]?: (value: Variant<S, Tag>) => U;
+} & { _?(): U };
+
+export function match<T extends Tagged, U>(expr: T, arms: MatchArms<T, U>): U {
+  const { tag, value } = expr;
+  const arm = arms[tag as keyof MatchArms<T, U>];
+  if (arm) {
+    return arm(value);
+  } else if (arms._) {
+    return arms._();
+  } else {
+    throw new Error("No Match");
+  }
+}
