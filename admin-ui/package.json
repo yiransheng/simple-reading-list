@@ -10,8 +10,10 @@
     "node-sass": "^4.12.0",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
+    "react-redux": "^7.1.0",
     "react-scripts": "3.0.1",
     "redux": "^4.0.1",
+    "redux-free-flow": "https://github.com/yiransheng/redux-free-flow.git",
     "typescript": "3.5.1"
   },
   "scripts": {
