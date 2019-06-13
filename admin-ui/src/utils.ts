@@ -1,12 +1,12 @@
-import { Tagged, Variant } from "./interface";
-import { Reducer, Action } from "redux";
+import {Tagged, Variant} from './interface';
+import {Reducer, Action} from 'redux';
 
 export interface SubstateReducer<S extends Tagged, T extends string, A> {
   (state: Variant<S, T>, action: A): S;
 }
 
 type SubstateReducerMap<S extends Tagged, A> = {
-  [Tag in S["tag"]]: SubstateReducer<S, Tag, A>;
+  [Tag in S['tag']]: SubstateReducer<S, Tag, A>;
 };
 
 export interface StrictReducer<S, A> {
@@ -14,7 +14,7 @@ export interface StrictReducer<S, A> {
 }
 
 export function createStateMachineReducer<S extends Tagged, A extends Action>(
-  mapping: SubstateReducerMap<S, A>
+  mapping: SubstateReducerMap<S, A>,
 ): StrictReducer<S, A> {
   return function(state: S, action: A) {
     const innerReducer = mapping[state.tag as keyof SubstateReducerMap<S, A>];
@@ -28,8 +28,9 @@ export function createStateMachineReducer<S extends Tagged, A extends Action>(
 }
 
 export function withInitialState<S, A extends Action>(
-  seedState: S): (reducer: StrictReducer<S, A>) => Reducer<S, A> {
-      return reducer => (state: S|undefined, action: A) => {
+  seedState: S,
+): (reducer: StrictReducer<S, A>) => Reducer<S, A> {
+  return reducer => (state: S | undefined, action: A) => {
     if (state != null) {
       return reducer(state, action);
     } else {
@@ -39,17 +40,17 @@ export function withInitialState<S, A extends Action>(
 }
 
 type MatchArms<S extends Tagged, U> = {
-  [Tag in S["tag"]]?: (value: Variant<S, Tag>) => U;
-} & { _?(): U };
+  [Tag in S['tag']]?: (value: Variant<S, Tag>) => U;
+} & {_?(): U};
 
 export function match<T extends Tagged, U>(expr: T, arms: MatchArms<T, U>): U {
-  const { tag, value } = expr;
+  const {tag, value} = expr;
   const arm = arms[tag as keyof MatchArms<T, U>];
   if (arm) {
     return arm(value);
   } else if (arms._) {
     return arms._();
   } else {
-    throw new Error("No Match");
+    throw new Error('No Match');
   }
 }

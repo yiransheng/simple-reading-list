@@ -3,7 +3,7 @@ export interface Tagged {
   value: any;
 }
 
-export type Variant<S extends Tagged, T> = S extends { tag: T; value: infer V }
+export type Variant<S extends Tagged, T> = S extends {tag: T; value: infer V}
   ? V
   : never;
 
@@ -12,31 +12,31 @@ export type Callback<T> = (arg: T) => void;
 export type Result<T, E> = Ok<T> | Err<E>;
 
 interface Ok<T> {
-  tag: "ok";
+  tag: 'ok';
   value: T;
 }
 
 interface Err<T> {
-  tag: "err";
+  tag: 'err';
   value: T;
 }
 
 export type Option<T> = OptionSome<T> | OptionNone<T>;
 
 export function Some<T>(value: T): Option<T> {
-  return { tag: "some", value };
+  return {tag: 'some', value};
 }
 export function None<T>(): Option<T> {
-  return { tag: "none" };
+  return {tag: 'none'};
 }
 
 interface OptionSome<T> {
-  tag: "some";
+  tag: 'some';
   value: T;
 }
 
 interface OptionNone<T> {
-  tag: "none";
+  tag: 'none';
 }
 
 export interface AuthData {

@@ -1,0 +1,9 @@
+.container {
+  width: 100vw;
+  padding: 0;
+  margin: 0; }
+  @media (min-width: 1280px) {
+    .container {
+      padding-left: 8rem;
+      width: 56rem;
+      max-width: calc(100vw - 12rem); } }

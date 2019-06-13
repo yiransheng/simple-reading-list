@@ -1,17 +1,12 @@
-import { Action } from "redux";
-import { AuthSuccess, AuthError } from "./interface";
+import {Action} from 'redux';
+import {AuthSuccess, AuthError} from './interface';
 
-export type Action =
-  | RequestAction
-  | ResponseAction
-  | SyncAction;
+export type Action = RequestAction | ResponseAction | SyncAction;
 
-export type SyncAction =
-  | LoginSuccessAction
-  | LoginErrorAction;
+export type SyncAction = LoginSuccessAction | LoginErrorAction;
 
 export interface RequestAction {
-  type: "REQUEST";
+  type: 'REQUEST';
   payload: {
     requestToken: string;
     requestId: number;
@@ -19,7 +14,7 @@ export interface RequestAction {
   };
 }
 export interface ResponseAction {
-  type: "RESPONSE";
+  type: 'RESPONSE';
   payload: {
     requestToken: string;
     requestId: number;
@@ -28,10 +23,10 @@ export interface ResponseAction {
 }
 
 export interface LoginSuccessAction {
-  type: "LOGIN_SUCCESS";
+  type: 'LOGIN_SUCCESS';
   payload: AuthSuccess;
 }
 export interface LoginErrorAction {
-  type: "LOGIN_ERROR";
+  type: 'LOGIN_ERROR';
   payload: AuthError;
 }

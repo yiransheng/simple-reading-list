@@ -1,5 +1,5 @@
-import { StrictReducer, createStateMachineReducer } from "../utils";
-import { SyncAction, Action } from "../actions";
+import {StrictReducer, createStateMachineReducer} from '../utils';
+import {SyncAction, Action} from '../actions';
 
 export interface RequestSet {
   has(reqToken: string, reqId: number): boolean;
@@ -12,79 +12,75 @@ export interface RequestSet {
 export type AsyncState<S> = IdleState<S> | PendingState<S>;
 
 export function withAsyncState<S>(
-  reducer: StrictReducer<S, SyncAction>
+  reducer: StrictReducer<S, SyncAction>,
 ): StrictReducer<AsyncState<S>, Action> {
   return createStateMachineReducer({
     idle: (state: S, action): AsyncState<S> => {
       switch (action.type) {
-        case "REQUEST": {
-          const { requestToken, requestId, blocking } = action.payload;
+        case 'REQUEST': {
+          const {requestToken, requestId, blocking} = action.payload;
           const requests = new (blocking ? BlockingSet : NonBlockingSet)(
             requestToken,
-            requestId
+            requestId,
           );
           return {
-            tag: "pending",
+            tag: 'pending',
             value: {
               requests,
-              state
-            }
+              state,
+            },
           };
         }
-        case "RESPONSE": {
-          return { tag: "idle", value: state };
+        case 'RESPONSE': {
+          return {tag: 'idle', value: state};
         }
         default:
-          return { tag: "idle", value: reducer(state, action) };
+          return {tag: 'idle', value: reducer(state, action)};
       }
     },
     pending: (st, action): AsyncState<S> => {
-      const { requests, state } = st;
+      const {requests, state} = st;
       switch (action.type) {
-        case "REQUEST": {
-          const { requestToken, requestId } = action.payload;
+        case 'REQUEST': {
+          const {requestToken, requestId} = action.payload;
           return {
-            tag: "pending",
+            tag: 'pending',
             value: {
               requests: requests.add(requestToken, requestId),
-              state
-            }
+              state,
+            },
           };
         }
-        case "RESPONSE": {
-          const {
-            action: innerAction,
-            requestToken,
-            requestId
-          } = action.payload;
+        case 'RESPONSE': {
+          const {action: innerAction, requestToken, requestId} = action.payload;
           if (!requests.has(requestToken, requestId)) {
-            return { tag: "pending", value: st };
+            return {tag: 'pending', value: st};
           } else {
             const nextState = reducer(state, innerAction);
             const reqs = requests.delete(requestToken, requestId);
             if (reqs.isEmpty()) {
-              return { tag: "idle", value: nextState };
+              return {tag: 'idle', value: nextState};
             } else {
               return {
-                tag: "pending",
-                value: { requests: reqs, state: nextState }
+                tag: 'pending',
+                value: {requests: reqs, state: nextState},
               };
             }
           }
         }
         default:
-          return { tag: "pending", value: st };
+          return {tag: 'pending', value: st};
       }
-    }
+    },
   });
 }
 
 interface IdleState<S> {
-  tag: "idle";
+  tag: 'idle';
   value: S;
 }
 interface PendingState<S> {
-  tag: "pending";
+  tag: 'pending';
   value: {
     requests: RequestSet;
     state: S;
@@ -94,7 +90,7 @@ interface PendingState<S> {
 class BlockingSet implements RequestSet {
   constructor(
     private reqToken: string | undefined,
-    private reqId: number | undefined
+    private reqId: number | undefined,
   ) {}
 
   isEmpty() {
