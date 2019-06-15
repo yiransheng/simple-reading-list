@@ -79,7 +79,7 @@ const App = withStoreState(
                 <h1>Hello, {user.email}</h1>
                 <button onClick={handleSignOut}>Logout</button>
               </header>
-            <StatusBar status={latestStatus} />
+              <StatusBar status={latestStatus} />
               <BookmarkForm
                 bookmark={bookmark}
                 onSubmit={handleSubmit}

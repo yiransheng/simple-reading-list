@@ -1,0 +1,37 @@
+$baseline: (1rem)*(1.375);
+
+.status_bar {
+  padding: $baseline*0.25 0.25rem;
+  font-size: 0.85rem;
+  height: $baseline * 2; 
+  line-height: $baseline;
+
+  border-radius: 3px;
+
+  > span {
+    font-family: monospace;
+    padding: $baseline*0.25 0.25rem;
+    display: block;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, .95);
+    background-color: rgba(255, 255, 255, .45);
+    color: #2d1b1b;
+    font-weight: 500;
+  }
+
+  transition: height 0.4s,
+              background-color 0.4s;
+
+  &.none {
+    height: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+  }
+  &.success {
+    background-color: rgba(44, 210, 44, .6);
+  }
+  &.error {
+    background-color: rgba(198, 44, 44, .4);
+  }
+}

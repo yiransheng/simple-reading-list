@@ -1,0 +1,25 @@
+.status_bar {
+  padding: 0.34375rem 0.25rem;
+  font-size: 0.85rem;
+  height: 2.75rem;
+  line-height: 1.375rem;
+  border-radius: 3px;
+  transition: height 0.4s, background-color 0.4s; }
+  .status_bar > span {
+    font-family: monospace;
+    padding: 0.34375rem 0.25rem;
+    display: block;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    background-color: rgba(255, 255, 255, 0.45);
+    color: #2d1b1b;
+    font-weight: 500; }
+  .status_bar.none {
+    height: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden; }
+  .status_bar.success {
+    background-color: rgba(44, 210, 44, 0.6); }
+  .status_bar.error {
+    background-color: rgba(198, 44, 44, 0.4); }
