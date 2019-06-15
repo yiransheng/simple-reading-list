@@ -1,5 +1,5 @@
 import { Action } from "redux";
-import { AuthSuccess, AuthError } from "./interface";
+import { AuthSuccess, GenericError } from "./interface";
 import { FreeDSL } from "redux-free-flow";
 
 export type Dispatchable = Action | FreeDSL<void>;
@@ -30,7 +30,7 @@ export interface LoginSuccessAction {
 }
 export interface LoginErrorAction {
   type: "LOGIN_ERROR";
-  payload: AuthError;
+  payload: GenericError;
 }
 export interface LogoutAction {
   type: "LOGOUT";

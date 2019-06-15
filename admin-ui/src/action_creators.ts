@@ -1,6 +1,6 @@
 import { FreeDSL, dispatch, effect, Do } from "redux-free-flow";
 
-import { Result, AuthData, AuthSuccess, AuthError } from "./interface";
+import { Result, AuthData, AuthSuccess, GenericError } from "./interface";
 import { Action, SyncAction } from "./actions";
 import { signin as signinApi, signout as signoutApi, whoami } from "./api";
 import { uid, match } from "./utils";
@@ -18,20 +18,20 @@ export function signout(): FreeDSL<void> {
 }
 
 function _auth(
-  eff: FreeDSL<Result<AuthSuccess, AuthError>>,
+  eff: FreeDSL<Result<AuthSuccess, GenericError>>,
   blocking: boolean
 ): FreeDSL<void> {
   const [request, response] = apiActions("signin");
 
   return Do(function*() {
     yield dispatch(request({ blocking }));
-    const result: Result<AuthSuccess, AuthError> = yield eff;
+    const result: Result<AuthSuccess, GenericError> = yield eff;
 
     yield match(result, {
       Ok(res: AuthSuccess) {
         return dispatch(response({ type: "LOGIN_SUCCESS", payload: res }));
       },
-      Err(err: AuthError) {
+      Err(err: GenericError) {
         return dispatch(response({ type: "LOGIN_ERROR", payload: err }));
       }
     });

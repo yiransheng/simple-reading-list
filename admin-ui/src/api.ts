@@ -5,7 +5,8 @@ import {
   Ok,
   Err,
   AuthSuccess,
-  AuthError
+  GenericError,
+  Bookmark,
 } from "./interface";
 import { match } from "./utils";
 
@@ -17,7 +18,7 @@ export interface ApiCall<T> {
 
 export function signin(
   data: AuthData
-): ApiCall<Result<AuthSuccess, AuthError>> {
+): ApiCall<Result<AuthSuccess, GenericError>> {
   return () =>
     fetch(`${apiRoot}/auth`, {
       method: "POST",
@@ -35,7 +36,7 @@ export function signin(
       .catch(error => Err({ error })) as any;
 }
 
-export const whoami: ApiCall<Result<AuthSuccess, AuthError>> = () =>
+export const whoami: ApiCall<Result<AuthSuccess, GenericError>> = () =>
   match(getToken(), {
     Ok: (token: string) =>
       fetch(`${apiRoot}/auth`, {
@@ -56,6 +57,28 @@ export const signout: ApiCall<void> = () => {
   deleteToken();
   return Promise.resolve();
 };
+
+export function createBookmark(
+  data: Bookmark
+): ApiCall<Result<void, GenericError>> {
+  return () =>
+    match(getToken(), {
+      Ok: (token: string) =>
+        fetch(`${apiRoot}/auth`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        })
+          .then(assertStatusOk)
+          .then(Ok)
+          // force type casting, needs manual verification
+          .catch(error => Err({ error })) as any,
+      Err: () => Promise.resolve(Err({ error: "no token" })) as any
+    });
+}
 
 function assertStatusOk(res: Response) {
   if (res.ok) {

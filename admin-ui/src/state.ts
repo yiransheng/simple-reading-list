@@ -1,6 +1,11 @@
-import {Bookmark} from './interface';
+import {Bookmark, AdminUser, GenericError} from './interface';
 
-export type State = UnkState | AnnoState | AdminState<{bookmark: Bookmark}>;
+export type State = UnkState | AnnoState | AdminState<AdminInnerState>;
+
+interface AdminInnerState {
+  bookmark: Bookmark;
+  user: AdminUser;
+}
 
 export const EMPTY_BOOKMARK: Bookmark = {
   title: '',

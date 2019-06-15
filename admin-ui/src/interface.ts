@@ -61,14 +61,15 @@ export interface AdminUser {
   email: string;
 }
 
-export type AuthResult = Result<AuthSuccess, AuthError>;
+export type AuthResult = Result<AuthSuccess, GenericError>;
 
 export interface AuthSuccess {
   user: AdminUser;
   token: string;
 }
 
-export interface AuthError {
+// wraps in an object, so JSON.stringify works mostly
+export interface GenericError {
   error: unknown;
 }
 

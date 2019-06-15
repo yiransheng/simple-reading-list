@@ -1,6 +1,6 @@
-import {State, EMPTY_BOOKMARK} from '../state';
-import {SyncAction} from '../actions';
-import {createStateMachineReducer, StrictReducer} from '../utils';
+import { State, EMPTY_BOOKMARK } from "../state";
+import { SyncAction } from "../actions";
+import { createStateMachineReducer, StrictReducer } from "../utils";
 
 export const workflowReducer: StrictReducer<
   State,
@@ -8,44 +8,46 @@ export const workflowReducer: StrictReducer<
 > = createStateMachineReducer({
   unknown(state, action) {
     switch (action.type) {
-      case 'LOGIN_ERROR': {
+      case "LOGIN_ERROR": {
         return {
-          tag: 'annoymous',
+          tag: "annoymous",
           value: null
         };
       }
-      case 'LOGIN_SUCCESS': {
+      case "LOGIN_SUCCESS": {
+        const { user } = action.payload;
         return {
-          tag: 'admin',
-          value: {bookmark: EMPTY_BOOKMARK},
+          tag: "admin",
+          value: { bookmark: EMPTY_BOOKMARK, user }
         };
       }
       default:
-        return {tag: 'unknown', value: state};
+        return { tag: "unknown", value: state };
     }
   },
   annoymous(state, action) {
     switch (action.type) {
-      case 'LOGIN_SUCCESS': {
+      case "LOGIN_SUCCESS": {
+        const { user } = action.payload;
         return {
-          tag: 'admin',
-          value: {bookmark: EMPTY_BOOKMARK},
+          tag: "admin",
+          value: { bookmark: EMPTY_BOOKMARK, user }
         };
       }
       default:
-        return {tag: 'annoymous', value: state};
+        return { tag: "annoymous", value: state };
     }
   },
   admin(state, action) {
     switch (action.type) {
-      case 'LOGOUT': {
+      case "LOGOUT": {
         return {
-          tag: 'annoymous',
+          tag: "annoymous",
           value: null
         };
       }
       default:
-        return {tag: 'admin', value: state};
+        return { tag: "admin", value: state };
     }
-  },
+  }
 });
