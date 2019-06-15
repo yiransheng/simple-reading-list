@@ -84,7 +84,13 @@ function assertStatusOk(res: Response) {
   if (res.ok) {
     return res.json();
   } else {
-    return res.json().then(err => Promise.reject(err));
+    return res.text().then(err => {
+      try {
+        return Promise.reject(JSON.parse(err));
+      } catch {
+        return Promise.reject(err);
+      }
+    });
   }
 }
 

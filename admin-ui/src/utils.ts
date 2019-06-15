@@ -74,10 +74,11 @@ export function getErrorStatus(err: GenericError, when: Date): AppStatus {
 
 export function getErrorMessage(err: GenericError): string {
   const {error} = err;
+  console.error('[ERROR]', error);
+
   if (typeof error === 'string') {
     return error;
   } else {
-    console.error('[ERROR]', error);
     return 'Generic error, see console.';
   }
 }
