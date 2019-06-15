@@ -54,3 +54,8 @@ export function match<T extends Tagged, U>(expr: T, arms: MatchArms<T, U>): U {
     throw new Error('No Match');
   }
 }
+
+let id = 0;
+export function uid(): number {
+  return ++id;
+}

@@ -1,15 +1,15 @@
-import React from "react";
+import React from 'react';
 
-import "../styles/css/loading_indicator.css";
+import '../styles/css/loading_indicator.css';
 
 export interface Props {
   show: boolean;
-  word: string;
+  msg: string;
   cycleLength?: number;
 }
 
-const chars: string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_=+{}|[]\\;':\"<>?,./`~".split(
-  ""
+const chars: string[] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()-_=+{}|[]\\;\':"<>?,./`~'.split(
+  '',
 );
 
 function randomChar(): string {
@@ -25,13 +25,13 @@ interface AnimationState {
 }
 
 function LoadingIndicatorInner(props: AnimationState): JSX.Element {
-  const { letters, cycleLength, frame, on } = props;
+  const {letters, cycleLength, frame, on} = props;
   const n = letters.length * 2;
 
   const charIndex = on ? Math.floor(frame / cycleLength) % n : n;
 
   const contents = letters.map((char, index) => {
-    if (char === " ") {
+    if (char === ' ') {
       return (
         <span key={index} className="letter">
           &nbsp;
@@ -45,22 +45,22 @@ function LoadingIndicatorInner(props: AnimationState): JSX.Element {
       );
     } else {
       return (
-        <span key={index} className="glitch" style={{ opacity: Math.random() }}>
+        <span key={index} className="glitch" style={{opacity: Math.random()}}>
           {randomChar()}
         </span>
       );
     }
   });
   return (
-    <div className="loading-word" style={{ opacity: on ? 1.0 : 0.0 }}>
+    <div className="loading-word" style={{opacity: on ? 1.0 : 0.0}}>
       {contents}
     </div>
   );
 }
 
 export const LoadingIndicator: React.FC<Props> = props => {
-  const { show, word, cycleLength = 6 } = props;
-  const letters = word.split("");
+  const {show, msg, cycleLength = 6} = props;
+  const letters = msg.split('');
   const frame = useAnimationFrame(show, letters.length * cycleLength);
 
   return (

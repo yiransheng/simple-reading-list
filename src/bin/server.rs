@@ -2,8 +2,13 @@ use std::env;
 
 use actix::prelude::*;
 use actix_web::{
-    body::Body, error::ResponseError, guard, http, middleware, web, App, Error,
-    HttpRequest, HttpResponse, HttpServer,
+    body::Body,
+    error::ResponseError,
+    guard,
+    http::{self, header},
+    middleware,
+    middleware::cors,
+    web, App, Error, HttpRequest, HttpResponse, HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
@@ -124,6 +129,17 @@ fn main() {
     // Start http server
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                cors::Cors::new()
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                    .allowed_headers(vec![
+                        header::AUTHORIZATION,
+                        header::ACCEPT,
+                    ])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .max_age(3600),
+            )
             .data(addr.clone())
             .data(SearchClient::new())
             .service(

@@ -1,9 +1,14 @@
-import {createStore} from 'redux';
-import {enhancer, EnhancedStore} from 'redux-free-flow';
+import { createStore } from "redux";
+import { enhancer, EnhancedStore } from "redux-free-flow";
 
-import {rootReducer, State} from './reducers';
-import {Action} from './actions';
+import { rootReducer, State } from "./reducers";
+import { Action } from "./actions";
 
 export function configureStore(): EnhancedStore<State, Action> {
-  return createStore(rootReducer, undefined, enhancer);
+  const store = createStore(rootReducer, undefined, enhancer);
+  if (process.env.NODE_ENV === "development") {
+    (window as any).store = store;
+  }
+
+  return store;
 }

@@ -1,6 +1,8 @@
 import {Action} from 'redux';
 import {AuthSuccess, AuthError} from './interface';
+import {FreeDSL} from 'redux-free-flow';
 
+export type Dispatchable = Action | FreeDSL<void>;
 export type Action = RequestAction | ResponseAction | SyncAction;
 
 export type SyncAction = LoginSuccessAction | LoginErrorAction;
