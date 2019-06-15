@@ -1,14 +1,20 @@
-import { Action } from "redux";
-import { AuthSuccess, GenericError } from "./interface";
-import { FreeDSL } from "redux-free-flow";
+import {Action} from 'redux';
+import {Bookmark, AuthSuccess, GenericError} from './interface';
+import {FreeDSL} from 'redux-free-flow';
 
 export type Dispatchable = Action | FreeDSL<void>;
 export type Action = RequestAction | ResponseAction | SyncAction;
 
-export type SyncAction = LoginSuccessAction | LoginErrorAction | LogoutAction;
+export type SyncAction =
+  | LoginSuccessAction
+  | LoginErrorAction
+  | LogoutAction
+  | EditBookmarkAction
+  | CreateErrorAction
+  | CreateSuccessAction;
 
 export interface RequestAction {
-  type: "REQUEST";
+  type: 'REQUEST';
   payload: {
     requestToken: string;
     requestId: number;
@@ -16,7 +22,7 @@ export interface RequestAction {
   };
 }
 export interface ResponseAction {
-  type: "RESPONSE";
+  type: 'RESPONSE';
   payload: {
     requestToken: string;
     requestId: number;
@@ -25,13 +31,29 @@ export interface ResponseAction {
 }
 
 export interface LoginSuccessAction {
-  type: "LOGIN_SUCCESS";
+  type: 'LOGIN_SUCCESS';
   payload: AuthSuccess;
 }
 export interface LoginErrorAction {
-  type: "LOGIN_ERROR";
+  type: 'LOGIN_ERROR';
   payload: GenericError;
 }
 export interface LogoutAction {
-  type: "LOGOUT";
+  type: 'LOGOUT';
+}
+export interface EditBookmarkAction {
+  type: 'EDIT_BOOKMARK';
+  payload: Bookmark;
+}
+export interface CreateSuccessAction {
+  type: 'BOOKMARK_CREATED';
+  payload: {
+    timestamp: Date;
+  };
+}
+export interface CreateErrorAction {
+  type: 'BOOKMARK_CREATE_FAILURE';
+  payload: {
+    timestamp: Date;
+  } & GenericError;
 }

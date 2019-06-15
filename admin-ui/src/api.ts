@@ -7,25 +7,25 @@ import {
   AuthSuccess,
   GenericError,
   Bookmark,
-} from "./interface";
-import { match } from "./utils";
+} from './interface';
+import {match} from './utils';
 
-const apiRoot = "http://localhost:8080/api";
+const apiRoot = 'http://localhost:8080/api';
 
 export interface ApiCall<T> {
   (): Promise<T>;
 }
 
 export function signin(
-  data: AuthData
+  data: AuthData,
 ): ApiCall<Result<AuthSuccess, GenericError>> {
   return () =>
     fetch(`${apiRoot}/auth`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
       .then(assertStatusOk)
       .then(res => {
@@ -33,24 +33,24 @@ export function signin(
         return Ok(res);
       })
       // force type casting, needs manual verification
-      .catch(error => Err({ error })) as any;
+      .catch(error => Err({error})) as any;
 }
 
 export const whoami: ApiCall<Result<AuthSuccess, GenericError>> = () =>
   match(getToken(), {
     Ok: (token: string) =>
       fetch(`${apiRoot}/auth`, {
-        method: "GET",
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
+          'Content-Type': 'application/json',
+        },
       })
         .then(assertStatusOk)
-        .then(user => Ok({ user, token }))
+        .then(user => Ok({user, token}))
         // force type casting, needs manual verification
-        .catch(error => Err({ error })) as any,
-    Err: () => Promise.resolve(Err({ error: "no token" })) as any
+        .catch(error => Err({error})) as any,
+    Err: () => Promise.resolve(Err({error: 'no token'})) as any,
   });
 
 export const signout: ApiCall<void> = () => {
@@ -59,24 +59,24 @@ export const signout: ApiCall<void> = () => {
 };
 
 export function createBookmark(
-  data: Bookmark
+  data: Bookmark,
 ): ApiCall<Result<void, GenericError>> {
   return () =>
     match(getToken(), {
       Ok: (token: string) =>
         fetch(`${apiRoot}/auth`, {
-          method: "POST",
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(data),
         })
           .then(assertStatusOk)
           .then(Ok)
           // force type casting, needs manual verification
-          .catch(error => Err({ error })) as any,
-      Err: () => Promise.resolve(Err({ error: "no token" })) as any
+          .catch(error => Err({error})) as any,
+      Err: () => Promise.resolve(Err({error: 'no token'})) as any,
     });
 }
 

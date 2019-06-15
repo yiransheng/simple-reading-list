@@ -61,7 +61,11 @@ function LoadingIndicatorInner(props: AnimationState): JSX.Element {
 export const LoadingIndicator: React.FC<Props> = props => {
   const {show, msg, cycleLength = 6} = props;
   const letters = msg.split('');
-  const frame = useAnimationFrame(show, cycleLength, letters.length * cycleLength);
+  const frame = useAnimationFrame(
+    show,
+    cycleLength,
+    letters.length * cycleLength,
+  );
 
   return (
     <LoadingIndicatorInner
@@ -107,8 +111,8 @@ function useAnimationFrame(on: boolean, start: number, N: number) {
 
     return () => {
       setTimeout(() => {
-      cancelAnimationFrame(animationFrame);
-      stopped = true;
+        cancelAnimationFrame(animationFrame);
+        stopped = true;
       }, 500);
     };
   }, [on, start, N]);

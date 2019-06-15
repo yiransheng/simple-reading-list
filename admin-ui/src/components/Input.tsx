@@ -16,22 +16,39 @@ export interface ControlledProps {
 export interface UncontrolledProps {
   controlled: false;
   label: string;
+  value?: string;
   type?: string;
   placeholder?: string;
 }
 
 export type Props = ControlledProps | UncontrolledProps;
 
+interface State {
+  local: string;
+  commited: boolean;
+}
+
 export const Input = React.forwardRef(
   (props: Props, ref: React.Ref<HTMLInputElement>) => {
+    const [st, setSt] = React.useState({
+      local: props.value || '',
+      commited: false,
+    });
+
     let input;
     if (props.controlled) {
       const {value, onChange, type = 'text', placeholder} = props;
       input = (
         <input
-          value={value}
+          value={st.commited ? value : st.local}
+          onFocus={() => setSt(st => ({...st, commited: false}))}
           onChange={e => {
-            onChange(e.target.value || '');
+            const local = e.target.value;
+            setSt(st => ({...st, local}));
+          }}
+          onBlur={() => {
+            setSt(st => ({...st, commited: true}));
+            onChange(st.local);
           }}
           placeholder={placeholder}
           type={type}

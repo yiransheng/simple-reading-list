@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import { Callback } from "../interface";
-import "../styles/css/form.css";
+import {Callback} from '../interface';
+import '../styles/css/form.css';
 
 export interface Props {
   label: string;
@@ -10,11 +10,15 @@ export interface Props {
 }
 
 export function TextArea(props: Props): JSX.Element {
-  const { label, value, onChange } = props;
+  const {label, value, onChange} = props;
   return (
     <fieldset className="textarea_fieldset">
       <label>{label}</label>
-      <textarea rows={10} value={value} onChange={e => onChange(e.target.value)} />
+      <textarea
+        rows={10}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
     </fieldset>
   );
 }

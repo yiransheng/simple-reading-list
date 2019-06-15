@@ -1,5 +1,6 @@
-import {Tagged, Variant} from './interface';
+import {GenericError, Tagged, Variant} from './interface';
 import {Reducer, Action} from 'redux';
+import {AppStatus} from './state';
 
 export interface SubstateReducer<S extends Tagged, T extends string, A> {
   (state: Variant<S, T>, action: A): S;
@@ -58,4 +59,25 @@ export function match<T extends Tagged, U>(expr: T, arms: MatchArms<T, U>): U {
 let id = 0;
 export function uid(): number {
   return ++id;
+}
+
+export function getErrorStatus(err: GenericError, when: Date): AppStatus {
+  return {
+    tag: 'err',
+    value: {
+      // TODO: to config file
+      dismissWhen: new Date(when.getTime() + 2500),
+      message: getErrorMessage(err),
+    },
+  };
+}
+
+export function getErrorMessage(err: GenericError): string {
+  const {error} = err;
+  if (typeof error === 'string') {
+    return error;
+  } else {
+    console.error('[ERROR]', error);
+    return 'Generic error, see console.';
+  }
 }
