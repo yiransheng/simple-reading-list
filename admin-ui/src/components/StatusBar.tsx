@@ -14,10 +14,11 @@ export interface Props {
 
 function useAutoDismiss(dismissWhen: Date) {
   const [wakeUp, setWakeUp] = React.useState(new Date());
+  const ts = dismissWhen.getTime();
 
   React.useEffect(() => {
     const now = Date.now();
-    const duration = dismissWhen.getTime() - now;
+    const duration = ts - now;
     if (duration < 0) {
       return;
     }
@@ -29,7 +30,7 @@ function useAutoDismiss(dismissWhen: Date) {
     return () => {
       clearTimeout(timer);
     };
-  }, [dismissWhen]);
+  }, [ts]);
 
   return wakeUp;
 }
