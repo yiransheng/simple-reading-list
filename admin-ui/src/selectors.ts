@@ -26,7 +26,7 @@ export function selectBookmark(appState: State): Option<Bookmark> {
   });
 }
 
-export function seleteLatestStatus(appState: State): AppStatus {
+export function selectLatestStatus(appState: State): AppStatus {
   const state = selectState(appState);
 
   return match(state, {

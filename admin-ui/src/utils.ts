@@ -66,7 +66,7 @@ export function getErrorStatus(err: GenericError, when: Date): AppStatus {
     tag: 'err',
     value: {
       // TODO: to config file
-      dismissWhen: new Date(when.getTime() + 2500),
+      dismissWhen: new Date(when.getTime() + 10000),
       message: getErrorMessage(err),
     },
   };

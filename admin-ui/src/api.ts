@@ -64,7 +64,7 @@ export function createBookmark(
   return () =>
     match(getToken(), {
       Ok: (token: string) =>
-        fetch(`${apiRoot}/auth`, {
+        fetch(`${apiRoot}/bookmarks`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,

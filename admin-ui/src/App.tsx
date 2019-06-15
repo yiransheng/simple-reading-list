@@ -3,12 +3,13 @@ import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
 import {match} from './utils';
-import {selectState, selectIsLoading} from './selectors';
+import {selectState, selectLatestStatus, selectIsLoading} from './selectors';
 import {State} from './reducers';
-import {State as SyncState} from './state';
+import {State as SyncState, AppStatus} from './state';
 import {Variant, Callback, AuthData, Bookmark} from './interface';
 import {AuthForm} from './components/AuthForm';
 import {BookmarkForm} from './components/Bookmark';
+import {StatusBar} from './components/StatusBar';
 import {LoadingIndicator} from './components/LoadingIndicator';
 import {signin, signout, editBookmark, createBookmark} from './action_creators';
 
@@ -18,6 +19,8 @@ interface Props {
   state: SyncState;
 
   isLoading: boolean;
+
+  latestStatus: AppStatus;
 
   handleSignIn: Callback<AuthData>;
 
@@ -32,6 +35,7 @@ const withStoreState = connect(
   (state: State) => ({
     state: selectState(state),
     isLoading: selectIsLoading(state),
+    latestStatus: selectLatestStatus(state),
   }),
   dispatch =>
     bindActionCreators(
@@ -45,10 +49,12 @@ const withStoreState = connect(
     ),
 );
 
+const dead = new Date(Date.now() + 2000);
 const App = withStoreState(
   ({
     state,
     isLoading,
+    latestStatus,
     handleSignIn,
     handleSignOut,
     handleSubmit,
@@ -73,6 +79,7 @@ const App = withStoreState(
                 <h1>Hello, {user.email}</h1>
                 <button onClick={handleSignOut}>Logout</button>
               </header>
+            <StatusBar status={latestStatus} />
               <BookmarkForm
                 bookmark={bookmark}
                 onSubmit={handleSubmit}
