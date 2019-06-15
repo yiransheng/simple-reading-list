@@ -7,6 +7,7 @@ import {State} from './reducers';
 import {State as SyncState} from './state';
 import {Variant} from './interface';
 import {AuthForm} from './components/AuthForm';
+import {LoadingIndicator} from './components/LoadingIndicator';
 
 import './styles/css/layout.css';
 
@@ -24,6 +25,7 @@ const withStoreState = connect((state: State) => ({
 const App = withStoreState(({state, isLoading}: Props) => {
   return (
     <div className="container">
+      <LoadingIndicator show word="logging on..." />
       {match(state, {
         annoymous: () => (
           <>
