@@ -1,6 +1,6 @@
 import {Bookmark} from './interface';
 
-export type State = AnnoState | AdminState<{bookmark: Bookmark}>;
+export type State = UnkState | AnnoState | AdminState<{bookmark: Bookmark}>;
 
 export const EMPTY_BOOKMARK: Bookmark = {
   title: '',
@@ -8,6 +8,11 @@ export const EMPTY_BOOKMARK: Bookmark = {
   body: '',
   tags: [],
 };
+
+interface UnkState {
+  tag: 'unknown';
+  value: null;
+}
 
 interface AnnoState {
   tag: 'annoymous';

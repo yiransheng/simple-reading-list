@@ -19,7 +19,7 @@ use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
-use common::models::{Bookmark, BookmarkDoc, NewBookmark};
+use common::models::{Bookmark, BookmarkDoc, NewBookmark, SlimUser};
 use common::search::{Search, SearchClient};
 use common::templates::{BookmarkItem, IntoBookmarkData, PageTemplate};
 use common::utils::{admin_guard, create_token};
@@ -111,11 +111,18 @@ fn login(
         .and_then(move |res| match res {
             Ok(user) => {
                 let token = create_token(&user)?;
-                let token = json!({ "token": token });
-                Ok(HttpResponse::Ok().json(token))
+                let res = json!({ "token": token, "user": user });
+                Ok(HttpResponse::Ok().json(res))
             }
             Err(err) => Ok(err.error_response()),
         })
+}
+
+fn whoami(user: Result<SlimUser, ServiceError>) -> Result<HttpResponse, Error> {
+    match user {
+        Ok(user) => Ok(HttpResponse::Ok().json(user)),
+        Err(err) => Ok(err.error_response()),
+    }
 }
 
 fn main() {
@@ -146,7 +153,7 @@ fn main() {
                 web::scope("/api")
                     .service(
                         web::resource("auth")
-                            // .route(web::get().to_async(whoami))
+                            .route(web::get().to(whoami))
                             .route(web::post().to_async(login)),
                     )
                     .service(

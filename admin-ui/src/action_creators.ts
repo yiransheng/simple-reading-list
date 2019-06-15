@@ -1,37 +1,68 @@
-import { FreeDSL, dispatch, effect, rollback, Do } from "redux-free-flow";
+import { FreeDSL, dispatch, effect, Do } from "redux-free-flow";
 
 import { Result, AuthData, AuthSuccess, AuthError } from "./interface";
-import { signin as signinApi } from "./api";
+import { Action, SyncAction } from "./actions";
+import { signin as signinApi, signout as signoutApi, whoami } from "./api";
 import { uid, match } from "./utils";
 
+export function checkToken(): FreeDSL<void> {
+  return _auth(effect(whoami), true);
+}
+
 export function signin(data: AuthData): FreeDSL<void> {
-  const requestId = uid();
-  const requestToken = "signin";
+  return _auth(effect(signinApi(data)), false);
+}
+
+export function signout(): FreeDSL<void> {
+  return effect(signoutApi).then(() => dispatch({ type: "LOGOUT" }));
+}
+
+function _auth(
+  eff: FreeDSL<Result<AuthSuccess, AuthError>>,
+  blocking: boolean
+): FreeDSL<void> {
+  const [request, response] = apiActions("signin");
 
   return Do(function*() {
-    yield dispatch({
-      type: "REQUEST",
-      payload: {
-        requestToken,
-        requestId
-      }
-    });
-    const result: Result<AuthSuccess, AuthError> = yield effect(
-      signinApi(data)
-    );
+    yield dispatch(request({ blocking }));
+    const result: Result<AuthSuccess, AuthError> = yield eff;
 
     yield match(result, {
       Ok(res: AuthSuccess) {
-        return dispatch({
-          type: "RESPONSE",
-          payload: {
-            requestToken,
-            requestId,
-            action: { type: "LOGIN_SUCCESS", payload: res }
-          }
-        });
+        return dispatch(response({ type: "LOGIN_SUCCESS", payload: res }));
       },
-      _: () => rollback
+      Err(err: AuthError) {
+        return dispatch(response({ type: "LOGIN_ERROR", payload: err }));
+      }
     });
   });
+}
+
+function apiActions(
+  requestToken: string
+): [(opt: { blocking: boolean }) => Action, (action: SyncAction) => Action] {
+  const requestId = uid();
+
+  function req({ blocking }: { blocking: boolean }): Action {
+    return {
+      type: "REQUEST",
+      payload: {
+        requestToken,
+        requestId,
+        blocking
+      }
+    };
+  }
+  function res(action: SyncAction): Action {
+    return {
+      type: "RESPONSE",
+      payload: {
+        requestToken,
+        requestId,
+        action
+      }
+    };
+  }
+
+  return [req, res];
 }

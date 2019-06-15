@@ -57,9 +57,14 @@ export interface AuthData {
   password: string;
 }
 
+export interface AdminUser {
+  email: string;
+}
+
 export type AuthResult = Result<AuthSuccess, AuthError>;
 
 export interface AuthSuccess {
+  user: AdminUser;
   token: string;
 }
 

@@ -18,7 +18,7 @@ export const rootReducer: Reducer<State, Action> = compose<
 >(
   withInitialState<State, Action>({
     tag: 'idle',
-    value: {tag: 'annoymous', value: null},
+    value: {tag: 'unknown', value: null},
   }),
   withAsyncState,
 )(workflowReducer);

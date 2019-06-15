@@ -10,7 +10,7 @@ import {Variant, AuthData} from './interface';
 import {AuthForm} from './components/AuthForm';
 import {LoadingIndicator} from './components/LoadingIndicator';
 import {Dispatchable} from './actions';
-import {signin} from './action_creators';
+import {signin, signout} from './action_creators';
 
 import './styles/css/layout.css';
 
@@ -19,7 +19,9 @@ interface Props {
 
   isLoading: boolean;
 
-  handleSubmit: (data: AuthData) => void,
+  handleSignIn: (data: AuthData) => void;
+
+  handleSignOut: () => void;
 }
 
 const withStoreState = connect(
@@ -28,24 +30,26 @@ const withStoreState = connect(
     isLoading: selectIsLoading(state)
   }),
   dispatch => bindActionCreators({
-    handleSubmit: signin,
+    handleSignIn: signin,
+    handleSignOut: signout,
   }, dispatch)
 );
 
-const App = withStoreState(({state, isLoading, handleSubmit}: Props) => {
+const App = withStoreState(({state, isLoading, handleSignIn, handleSignOut}: Props) => {
   return (
     <div className="container">
       <LoadingIndicator show={isLoading} msg="sending request..." />
       {match(state, {
+        unknown: () => null,
         annoymous: () => (
           <>
             <h1>Admin Login</h1>
             <div style={{width: '24rem'}}>
-              <AuthForm onSubmit={handleSubmit} />
+              <AuthForm onSubmit={handleSignIn} />
             </div>
           </>
         ),
-        admin: () => <h2>Ok</h2>,
+        admin: () => <button onClick={handleSignOut}>Logout</button>,
       })}
     </div>
   );

@@ -1,4 +1,13 @@
-import { AuthData, Result, Ok, Err, AuthSuccess, AuthError } from "./interface";
+import {
+  AuthData,
+  AdminUser,
+  Result,
+  Ok,
+  Err,
+  AuthSuccess,
+  AuthError
+} from "./interface";
+import { match } from "./utils";
 
 const apiRoot = "http://localhost:8080/api";
 
@@ -18,27 +27,35 @@ export function signin(
       body: JSON.stringify(data)
     })
       .then(assertStatusOk)
-      .then(Ok)
+      .then(res => {
+        setToken(res.token);
+        return Ok(res);
+      })
       // force type casting, needs manual verification
       .catch(error => Err({ error })) as any;
 }
 
-export function validateToken(
-  token: string,
-): ApiCall<Result<void, AuthError>> {
-  return () =>
-    fetch(`${apiRoot}/auth`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-    })
-      .then(assertStatusOk)
-      .then(Ok)
-      // force type casting, needs manual verification
-      .catch(error => Err({ error })) as any;
-}
+export const whoami: ApiCall<Result<AuthSuccess, AuthError>> = () =>
+  match(getToken(), {
+    Ok: (token: string) =>
+      fetch(`${apiRoot}/auth`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
+        .then(assertStatusOk)
+        .then(user => Ok({ user, token }))
+        // force type casting, needs manual verification
+        .catch(error => Err({ error })) as any,
+    Err: () => Promise.resolve(Err({ error: "no token" })) as any
+  });
+
+export const signout: ApiCall<void> = () => {
+  deleteToken();
+  return Promise.resolve();
+};
 
 function assertStatusOk(res: Response) {
   if (res.ok) {
@@ -46,4 +63,25 @@ function assertStatusOk(res: Response) {
   } else {
     return res.json().then(err => Promise.reject(err));
   }
+}
+
+function setToken(token: string) {
+  localStorage.setItem(tokenKey(), token);
+}
+
+function deleteToken() {
+  localStorage.removeItem(tokenKey());
+}
+
+function getToken(): Result<string, null> {
+  let token = localStorage.getItem(tokenKey());
+  if (token) {
+    return Ok(token);
+  } else {
+    return Err(null);
+  }
+}
+
+function tokenKey(): string {
+  return `${apiRoot}/token`;
 }

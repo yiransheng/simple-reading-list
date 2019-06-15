@@ -33,7 +33,7 @@ pub struct NewUser<'a> {
     pub is_admin: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct SlimUser {
     pub email: String,
     pub is_admin: bool,

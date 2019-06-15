@@ -28,7 +28,7 @@ function LoadingIndicatorInner(props: AnimationState): JSX.Element {
   const {letters, cycleLength, frame, on} = props;
   const n = letters.length * 2;
 
-  const charIndex = on ? Math.floor(frame / cycleLength) % n : n;
+  const charIndex = Math.floor(frame / cycleLength) % n;
 
   const contents = letters.map((char, index) => {
     if (char === ' ') {
@@ -61,7 +61,7 @@ function LoadingIndicatorInner(props: AnimationState): JSX.Element {
 export const LoadingIndicator: React.FC<Props> = props => {
   const {show, msg, cycleLength = 6} = props;
   const letters = msg.split('');
-  const frame = useAnimationFrame(show, letters.length * cycleLength);
+  const frame = useAnimationFrame(show, cycleLength, letters.length * cycleLength);
 
   return (
     <LoadingIndicatorInner
@@ -75,7 +75,7 @@ export const LoadingIndicator: React.FC<Props> = props => {
 
 const MULTIPLE = 16;
 
-function useAnimationFrame(on: boolean, N: number) {
+function useAnimationFrame(on: boolean, start: number, N: number) {
   N = N * MULTIPLE;
 
   const [frame, setFrame] = React.useState(0);
@@ -100,16 +100,18 @@ function useAnimationFrame(on: boolean, N: number) {
       animationFrame = requestAnimationFrame(eachFrame);
     }
 
-    setFrame(0);
+    setFrame(start);
     loop();
 
     // Clean things up
 
     return () => {
+      setTimeout(() => {
       cancelAnimationFrame(animationFrame);
       stopped = true;
+      }, 500);
     };
-  }, [on, N]);
+  }, [on, start, N]);
 
   return frame;
 }
