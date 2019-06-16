@@ -5,9 +5,9 @@ import {
   AuthData,
   AuthSuccess,
   GenericError,
-  Option,
   Bookmark,
 } from './interface';
+import {State} from './reducers';
 import {Action, SyncAction} from './actions';
 import {
   createBookmark as createBookmarkApi,
@@ -17,18 +17,17 @@ import {
 } from './api';
 import {uid, match} from './utils';
 import {selectBookmark, selectIsLoading} from './selectors';
-import {ReduxDSL} from './store';
 
-export function checkToken(): ReduxDSL<void> {
+export function checkToken(): FreeDSL<State, Action, void> {
   return _auth(effect(whoami), true);
 }
 
-export function signin(data: AuthData): ReduxDSL<void> {
+export function signin(data: AuthData): FreeDSL<State, Action, void> {
   return _auth(effect(signinApi(data)), false);
 }
 
-export function signout(): ReduxDSL<void> {
-  return effect(signoutApi).then(() => dispatch({type: 'LOGOUT'})).phantom();
+export function signout(): FreeDSL<unknown, Action, void> {
+  return effect(signoutApi).then(() => dispatch({type: 'LOGOUT'}));
 }
 
 export function editBookmark(payload: Bookmark): SyncAction {
@@ -38,52 +37,52 @@ export function editBookmark(payload: Bookmark): SyncAction {
   };
 }
 
-export function createBookmark(): ReduxDSL<void> {
-  const [request, response] = apiActions('create_bookmark');
+export function createBookmark(): FreeDSL<State, Action, void> {
+  const [request, response] = apiActions("create_bookmark");
 
   return Do(function*() {
-    const bookmark: Option<Bookmark> = yield read(selectBookmark);
+    const bookmark: ReturnType<typeof selectBookmark> = yield read(selectBookmark);
     const loading: boolean = yield read(selectIsLoading);
 
     let data;
-    if (!loading && bookmark.tag === 'Some') {
+    if (!loading && bookmark.tag === "Some") {
       data = bookmark.value;
+
+      yield dispatch(request({ blocking: true }));
+      const result: Result<void, GenericError> = yield effect(
+        createBookmarkApi(data)
+      );
+
+      yield match(result, {
+        Ok(_: void) {
+          return dispatch(
+            response({
+              type: "BOOKMARK_CREATED",
+              payload: {
+                timestamp: new Date()
+              }
+            })
+          );
+        },
+        Err(err: GenericError) {
+          return dispatch(
+            response({
+              type: "BOOKMARK_CREATE_FAILURE",
+              payload: { ...err, timestamp: new Date() }
+            })
+          );
+        }
+      });
     } else {
-      return end.phantom();
+      yield end;
     }
-
-    yield dispatch(request({blocking: true}));
-    const result: Result<void, GenericError> = yield effect(
-      createBookmarkApi(data),
-    );
-
-    yield match(result, {
-      Ok(_: void) {
-        return dispatch(
-          response({
-            type: 'BOOKMARK_CREATED',
-            payload: {
-              timestamp: new Date(),
-            },
-          }),
-        ).phantom();
-      },
-      Err(err: GenericError) {
-        return dispatch(
-          response({
-            type: 'BOOKMARK_CREATE_FAILURE',
-            payload: {...err, timestamp: new Date()},
-          }),
-        ).phantom();
-      },
-    });
   });
 }
 
 function _auth(
-  eff: ReduxDSL<Result<AuthSuccess, GenericError>>,
+  eff: FreeDSL<State, Action, Result<AuthSuccess, GenericError>>,
   blocking: boolean,
-): ReduxDSL<void> {
+): FreeDSL<State, Action, void> {
   const [request, response] = apiActions('signin');
 
   return Do(function*() {
@@ -92,10 +91,10 @@ function _auth(
 
     yield match(result, {
       Ok(res: AuthSuccess) {
-        return dispatch(response({type: 'LOGIN_SUCCESS', payload: res})).phantom();
+        return dispatch(response({type: 'LOGIN_SUCCESS', payload: res}));
       },
       Err(err: GenericError) {
-        return dispatch(response({type: 'LOGIN_ERROR', payload: err})).phantom();
+        return dispatch(response({type: 'LOGIN_ERROR', payload: err}));
       },
     });
   });

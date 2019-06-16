@@ -1,11 +1,9 @@
 import {createStore} from 'redux';
-import {enhancer, FreeDSL, EnhancedStore} from 'redux-free-flow';
+import {enhancer, EnhancedStore} from 'redux-free-flow';
 
 import {rootReducer, State} from './reducers';
 import {Action} from './actions';
 import {checkToken} from './action_creators';
-
-export type ReduxDSL<T> = FreeDSL<State, Action, T>;
 
 export function configureStore(): EnhancedStore<State, Action> {
   const store = createStore(rootReducer, undefined, enhancer);

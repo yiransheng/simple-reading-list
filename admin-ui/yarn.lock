@@ -7346,7 +7346,7 @@ redent@^1.0.0:
 
 "redux-free-flow@https://github.com/yiransheng/redux-free-flow.git":
   version "0.0.2"
-  resolved "https://github.com/yiransheng/redux-free-flow.git#767f3dcc67b28b9b6129143ee47ae1c86a2a189c"
+  resolved "https://github.com/yiransheng/redux-free-flow.git#39d3d70b6593e6de4ff10500fc84ddbc6be34635"
   dependencies:
     change-emitter "^0.1.3"
     single-key "^1.0.0"
