@@ -38,6 +38,10 @@ export const Input = React.forwardRef(
     let input;
     if (props.controlled) {
       const {value, onChange, type = 'text', placeholder} = props;
+      if (st.commited && st.local !== value) {
+        setSt({ commited: true, local: value });
+      }
+
       input = (
         <input
           value={st.commited ? value : st.local}
