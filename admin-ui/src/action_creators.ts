@@ -17,17 +17,18 @@ import {
 } from './api';
 import {uid, match} from './utils';
 import {selectBookmark, selectIsLoading} from './selectors';
+import {ReduxDSL} from './store';
 
-export function checkToken(): FreeDSL<void> {
+export function checkToken(): ReduxDSL<void> {
   return _auth(effect(whoami), true);
 }
 
-export function signin(data: AuthData): FreeDSL<void> {
+export function signin(data: AuthData): ReduxDSL<void> {
   return _auth(effect(signinApi(data)), false);
 }
 
-export function signout(): FreeDSL<void> {
-  return effect(signoutApi).then(() => dispatch({type: 'LOGOUT'}));
+export function signout(): ReduxDSL<void> {
+  return effect(signoutApi).then(() => dispatch({type: 'LOGOUT'})).phantom();
 }
 
 export function editBookmark(payload: Bookmark): SyncAction {
@@ -37,7 +38,7 @@ export function editBookmark(payload: Bookmark): SyncAction {
   };
 }
 
-export function createBookmark(): FreeDSL<void> {
+export function createBookmark(): ReduxDSL<void> {
   const [request, response] = apiActions('create_bookmark');
 
   return Do(function*() {
@@ -48,8 +49,7 @@ export function createBookmark(): FreeDSL<void> {
     if (!loading && bookmark.tag === 'Some') {
       data = bookmark.value;
     } else {
-      // TODO: fix in redux-free-flow
-      return end as any;
+      return end.phantom();
     }
 
     yield dispatch(request({blocking: true}));
@@ -66,7 +66,7 @@ export function createBookmark(): FreeDSL<void> {
               timestamp: new Date(),
             },
           }),
-        );
+        ).phantom();
       },
       Err(err: GenericError) {
         return dispatch(
@@ -74,16 +74,16 @@ export function createBookmark(): FreeDSL<void> {
             type: 'BOOKMARK_CREATE_FAILURE',
             payload: {...err, timestamp: new Date()},
           }),
-        );
+        ).phantom();
       },
     });
   });
 }
 
 function _auth(
-  eff: FreeDSL<Result<AuthSuccess, GenericError>>,
+  eff: ReduxDSL<Result<AuthSuccess, GenericError>>,
   blocking: boolean,
-): FreeDSL<void> {
+): ReduxDSL<void> {
   const [request, response] = apiActions('signin');
 
   return Do(function*() {
@@ -92,10 +92,10 @@ function _auth(
 
     yield match(result, {
       Ok(res: AuthSuccess) {
-        return dispatch(response({type: 'LOGIN_SUCCESS', payload: res}));
+        return dispatch(response({type: 'LOGIN_SUCCESS', payload: res})).phantom();
       },
       Err(err: GenericError) {
-        return dispatch(response({type: 'LOGIN_ERROR', payload: err}));
+        return dispatch(response({type: 'LOGIN_ERROR', payload: err})).phantom();
       },
     });
   });
