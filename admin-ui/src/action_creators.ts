@@ -26,8 +26,8 @@ export function signin(data: AuthData): FreeDSL<State, Action, void> {
   return _auth(effect(signinApi(data)), false);
 }
 
-export function signout(): FreeDSL<unknown, Action, void> {
-  return effect(signoutApi).andThen(() => dispatch({type: 'LOGOUT'}));
+export function signout(): FreeDSL<never, Action, void> {
+  return effect(signoutApi).andThen(() => dispatch<Action>({type: 'LOGOUT'}));
 }
 
 export function editBookmark(payload: Bookmark): SyncAction {
@@ -38,45 +38,88 @@ export function editBookmark(payload: Bookmark): SyncAction {
 }
 
 export function createBookmark(): FreeDSL<State, Action, void> {
-  const [request, response] = apiActions("create_bookmark");
+  const [request, response] = apiActions('create_bookmark');
 
-  return Do(function*() {
-    const bookmark: ReturnType<typeof selectBookmark> = yield read(selectBookmark);
-    const loading: boolean = yield read(selectIsLoading);
+  // strong typing, this expression has a deeply-nested type
+  // similar to typical rust combinator style code; ts checker ensures
+  // it is, in fact, FreeDSL<State, Action, void>
+  return read(selectBookmark).andThen(bookmark =>
+    read(selectIsLoading).andThen(loading => {
+      if (loading) {
+        return end;
+      }
+      if (bookmark.tag === 'None') {
+        return end;
+      }
+      const data = bookmark.value;
+      return dispatch(request({blocking: true}))
+        .andThen(() => effect(createBookmarkApi(data)))
+        .andThen(
+          (result): FreeDSL<never, Action, void> =>
+            match(result, {
+              Ok(_: void) {
+                return dispatch(
+                  response({
+                    type: 'BOOKMARK_CREATED',
+                    payload: {
+                      timestamp: new Date(),
+                    },
+                  }),
+                );
+              },
+              Err(err: GenericError) {
+                return dispatch(
+                  response({
+                    type: 'BOOKMARK_CREATE_FAILURE',
+                    payload: {...err, timestamp: new Date()},
+                  }),
+                );
+              },
+            }),
+        );
+    }),
+  );
 
-    let data;
-    if (!loading && bookmark.tag === "Some") {
-      data = bookmark.value;
-
-      yield dispatch(request({ blocking: true }));
-      const result: Result<void, GenericError> = yield effect(
-        createBookmarkApi(data)
-      );
-
-      yield match(result, {
-        Ok(_: void) {
-          return dispatch(
-            response({
-              type: "BOOKMARK_CREATED",
-              payload: {
-                timestamp: new Date()
-              }
-            })
-          );
-        },
-        Err(err: GenericError) {
-          return dispatch(
-            response({
-              type: "BOOKMARK_CREATE_FAILURE",
-              payload: { ...err, timestamp: new Date() }
-            })
-          );
-        }
-      });
-    } else {
-      yield end;
-    }
-  });
+  // weak typing, better readability
+  /*
+   *   return Do(function*() {
+   *     const bookmark: ReturnType<typeof selectBookmark> = yield read(selectBookmark);
+   *     const loading: boolean = yield read(selectIsLoading);
+   *
+   *     let data;
+   *     if (!loading && bookmark.tag === "Some") {
+   *       data = bookmark.value;
+   *
+   *       yield dispatch(request({ blocking: true }));
+   *       const result: Result<void, GenericError> = yield effect(
+   *         createBookmarkApi(data)
+   *       );
+   *
+   *       yield match(result, {
+   *         Ok(_: void) {
+   *           return dispatch(
+   *             response({
+   *               type: "BOOKMARK_CREATED",
+   *               payload: {
+   *                 timestamp: new Date()
+   *               }
+   *             })
+   *           );
+   *         },
+   *         Err(err: GenericError) {
+   *           return dispatch(
+   *             response({
+   *               type: "BOOKMARK_CREATE_FAILURE",
+   *               payload: { ...err, timestamp: new Date() }
+   *             })
+   *           );
+   *         }
+   *       });
+   *     } else {
+   *       yield end;
+   *     }
+   *   });
+   */
 }
 
 function _auth(
