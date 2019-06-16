@@ -27,7 +27,7 @@ export function signin(data: AuthData): FreeDSL<State, Action, void> {
 }
 
 export function signout(): FreeDSL<unknown, Action, void> {
-  return effect(signoutApi).then(() => dispatch({type: 'LOGOUT'}));
+  return effect(signoutApi).andThen(() => dispatch({type: 'LOGOUT'}));
 }
 
 export function editBookmark(payload: Bookmark): SyncAction {
