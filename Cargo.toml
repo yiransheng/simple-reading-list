@@ -25,7 +25,9 @@ futures = "0.1"
 actix-web = "1.0.0"
 actix = { version = "0.8.0-rc", features = ["http"] }
 actix-rt = "0.2.2"
+
 horrorshow = "0.6.6"
+pulldown-cmark = "0.5.2"
 
 bcrypt = "0.4.0"
 toml = "0.5.1"
