@@ -1,3 +1,5 @@
+use std::io;
+
 use horrorshow::helper::doctype;
 use horrorshow::{html, RenderOnce, Template, TemplateBuffer};
 
