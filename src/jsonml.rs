@@ -160,10 +160,11 @@ mod tests {
                         vec![Element::Text(CowStr::Borrowed("Google"))],
                     )],
                 ),
+                Element::SelfClosing("input", None),
             ],
         );
         let serialized = serde_json::to_string_pretty(&el).unwrap();
-        eprintln!("{}", serialized);
+        // eprintln!("{}", serialized);
         let js_value: serde_json::Value =
             serde_json::from_str(&serialized).unwrap();
 
@@ -174,6 +175,7 @@ mod tests {
                 ["li", "first"],
                 ["li", "second"],
                 ["li", ["a", {"href": "https://www.google.com"}, "Google"]],
+                ["input"],
             ])
         );
     }
