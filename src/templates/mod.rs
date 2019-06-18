@@ -35,10 +35,10 @@ where
                 body {
                     header {
                         h1 : "Insightful Reads";
-                        form {
+                        form(action = "/search", method = "GET") {
                             div {
                                 : Raw(ICON);
-                                input(type = "text");
+                                input(type = "text", name = "q");
                                 input(type = "submit", value = "検索");
                             }
                         }

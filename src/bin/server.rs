@@ -13,7 +13,10 @@ use actix_web::{
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
-use futures::{future, Future};
+use futures::{
+    future::{self, ok, Either},
+    Future,
+};
 use horrorshow::Template;
 use serde_json::json;
 
@@ -68,11 +71,45 @@ fn recent_bookmarks_html(
 
 fn search_bookmark(
     search_client: web::Data<SearchClient>,
-    search: web::Query<Search>,
+    search: Option<web::Query<Search>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    search_client
-        .query_docs(&search.q)
-        .map(move |mut results| HttpResponse::Ok().json(results))
+    match search {
+        Some(ref search) if !search.q.is_empty() => Either::A(
+            search_client
+                .query_docs(dbg!(&search.q))
+                .map(move |results| HttpResponse::Ok().json(results)),
+        ),
+        _ => Either::B(ok(HttpResponse::BadRequest().into())),
+    }
+}
+
+fn search_bookmark_html(
+    search_client: web::Data<SearchClient>,
+    search: Option<web::Query<Search>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    match search {
+        Some(ref search) if !search.q.is_empty() => {
+            Either::A(search_client.query_docs(&search.q).and_then(
+                move |bookmarks| {
+                    let items = bookmarks
+                        .docs
+                        .into_iter()
+                        .map(|doc| BookmarkItem::new(doc.doc));
+                    let page = PageTemplate::new(items);
+                    match page.into_string() {
+                        Ok(body) => Ok(HttpResponse::Ok()
+                            .content_type("text/html")
+                            .body(body)),
+                        _ => Ok(HttpResponse::InternalServerError().into()),
+                    }
+                },
+            ))
+        }
+        _ => Either::B(ok(HttpResponse::Found()
+            .header(http::header::LOCATION, "/")
+            .finish()
+            .into_body())),
+    }
 }
 
 fn create_bookmark(
@@ -173,6 +210,10 @@ fn main() {
             .service(
                 web::resource("/")
                     .route(web::get().to_async(recent_bookmarks_html)),
+            )
+            .service(
+                web::resource("/search")
+                    .route(web::get().to_async(search_bookmark_html)),
             )
     })
     .bind("127.0.0.1:8080")
