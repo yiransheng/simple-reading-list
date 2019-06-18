@@ -1,61 +1,45 @@
 use std::io;
 
 use crate::models::{Bookmark, BookmarkDoc};
-use horrorshow::{html, RenderOnce, Template, TemplateBuffer};
+use horrorshow::{html, RenderOnce, TemplateBuffer};
 use pulldown_cmark::{html, Parser};
 
-pub trait IntoBookmarkData: Into<BmData> {}
-
-impl<T: Into<BmData>> IntoBookmarkData for T {}
-
-enum BmData {
-    Bookmark(Bookmark),
-    Doc(BookmarkDoc),
+pub trait IntoBookmark {
+    fn into_bookmark(self) -> Bookmark;
 }
-impl BmData {
+
+impl IntoBookmark for Bookmark {
     fn into_bookmark(self) -> Bookmark {
-        match self {
-            BmData::Bookmark(b) => b,
-            BmData::Doc(b) => b.to_bookmark_lossy(),
-        }
+        self
     }
 }
-
-impl From<Bookmark> for BmData {
-    fn from(b: Bookmark) -> Self {
-        BmData::Bookmark(b)
-    }
-}
-
-impl From<BookmarkDoc> for BmData {
-    fn from(b: BookmarkDoc) -> Self {
-        BmData::Doc(b)
+impl IntoBookmark for BookmarkDoc {
+    fn into_bookmark(self) -> Bookmark {
+        self.to_bookmark_lossy()
     }
 }
 
 pub struct BookmarkItem {
-    data: BmData,
+    data: Bookmark,
 }
 impl BookmarkItem {
-    pub fn new<B: Into<BmData>>(b: B) -> Self {
-        Self { data: b.into() }
+    pub fn new<B: IntoBookmark>(b: B) -> Self {
+        Self {
+            data: b.into_bookmark(),
+        }
     }
 }
 
 impl RenderOnce for BookmarkItem {
     fn render_once(self, tmpl: &mut TemplateBuffer) {
         let Bookmark {
-            title,
-            url,
-            body,
-            created,
-            ..
-        } = self.data.into_bookmark();
+            title, url, body, ..
+        } = self.data;
 
         tmpl << html! {
-            div(class = "link-item") {
+            div(class = "item") {
                 h2 {
-                    a(href = url) {
+                    a(href = url, class = "external") {
                       : title
                     }
                 }

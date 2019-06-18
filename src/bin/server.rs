@@ -21,7 +21,7 @@ use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark, SlimUser};
 use common::search::{Search, SearchClient};
-use common::templates::{BookmarkItem, IntoBookmarkData, PageTemplate};
+use common::templates::{BookmarkItem, IntoBookmark, PageTemplate};
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
