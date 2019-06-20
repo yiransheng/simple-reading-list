@@ -41,7 +41,7 @@ impl Handler<QueryRecent> for DbExecutor {
         let conn: &PgConnection = &self.0.get().unwrap();
 
         bookmarks
-            .order(created.desc())
+            .order_by(created.desc())
             .paginate(1)
             .per_page(25)
             .load_and_count_pages::<Bookmark>(conn)

@@ -57,7 +57,10 @@ fn recent_bookmarks_html(
         .and_then(|res| match res {
             Ok(bookmarks) => {
                 let items = bookmarks.data.into_iter().map(BookmarkItem::new);
-                let page = PageTemplate::new(items);
+                let page = PageTemplate::new_with_next_page(
+                    bookmarks.next_page,
+                    items,
+                );
                 match page.into_string() {
                     Ok(body) => Ok(HttpResponse::Ok()
                         .content_type("text/html")

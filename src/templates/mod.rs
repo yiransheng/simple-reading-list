@@ -8,12 +8,19 @@ mod bookmark_item;
 pub use bookmark_item::*;
 
 pub struct PageTemplate<I> {
+    next_page: Option<i64>,
     items: I,
 }
 
 impl<I> PageTemplate<I> {
     pub fn new(items: I) -> Self {
-        Self { items }
+        Self {
+            next_page: None,
+            items,
+        }
+    }
+    pub fn new_with_next_page(next_page: Option<i64>, items: I) -> Self {
+        Self { next_page, items }
     }
 }
 
@@ -46,6 +53,13 @@ where
                     div(class = "main") {
                         @ for t in self.items {
                             |tmpl| tmpl << t
+                        }
+                        @ if let Some(next_page) = self.next_page {
+                            div(class = "item") {
+                                a(href = "#", data-next-page = next_page) {
+                                    : "More >>"
+                                }
+                            }
                         }
                     }
                 }
