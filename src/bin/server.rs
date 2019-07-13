@@ -22,9 +22,11 @@ use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
-use common::models::{Bookmark, BookmarkDoc, NewBookmark, SlimUser};
+use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
 use common::search::{Search, SearchClient};
-use common::templates::{BookmarkItem, IntoBookmark, PageTemplate};
+use common::templates::{
+    bookmark_jsonml, BookmarkItem, IntoBookmark, PageTemplate,
+};
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
@@ -44,7 +46,16 @@ fn recent_bookmarks(
     db.send(QueryRecent(25))
         .from_err()
         .and_then(|res| match res {
-            Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
+            Ok(bookmarks) => {
+                let contents: Vec<_> =
+                    bookmarks.data.iter().map(bookmark_jsonml).collect();
+                let res = PageData {
+                    data: contents,
+                    total_pages: bookmarks.total_pages,
+                    next_page: bookmarks.next_page,
+                };
+                Ok(HttpResponse::Ok().json(res))
+            }
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
 }

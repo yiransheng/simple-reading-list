@@ -4,8 +4,10 @@ use horrorshow::helper::doctype;
 use horrorshow::{html, Raw, RenderOnce, TemplateBuffer};
 
 mod bookmark_item;
+mod bookmark_jsonml;
 
 pub use bookmark_item::*;
+pub use bookmark_jsonml::bookmark_jsonml;
 
 pub struct PageTemplate<I> {
     next_page: Option<i64>,

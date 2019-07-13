@@ -43,7 +43,7 @@ impl RenderOnce for BookmarkItem {
                       : title
                     }
                 }
-                p {
+                div {
                   |buffer| {
                       let parser = Parser::new(&body);
                       let writer = WriteTemplateDirectly { buffer };

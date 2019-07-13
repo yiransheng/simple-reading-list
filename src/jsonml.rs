@@ -1,4 +1,4 @@
-use std::iter::{FromIterator, Peekable};
+use std::iter::Peekable;
 
 use pulldown_cmark::{CowStr, Event, LinkType, Parser, Tag};
 use serde::ser::{Serialize, SerializeSeq, Serializer};
@@ -7,6 +7,53 @@ use serde_derive::*;
 #[derive(Debug)]
 pub struct JsonML<'a> {
     elements: Vec<Element<'a>>,
+}
+
+pub struct JsonMLBuilder<'a> {
+    elements: Vec<Element<'a>>,
+}
+impl<'a> JsonMLBuilder<'a> {
+    pub fn new() -> Self {
+        Self { elements: vec![] }
+    }
+    pub fn build(self) -> JsonML<'a> {
+        JsonML {
+            elements: self.elements,
+        }
+    }
+    pub fn append_text_node<T>(mut self, contents: T) -> Self
+    where
+        T: Into<CowStr<'a>>,
+    {
+        let el = Element::Text(contents.into());
+        self.elements.push(el);
+        self
+    }
+    pub fn append_element<F>(mut self, tag: &'static str, f: F) -> Self
+    where
+        F: FnOnce(JsonMLBuilder<'a>) -> JsonML<'a>,
+    {
+        let builder = JsonMLBuilder::new();
+        let children = f(builder).elements;
+        let element = Element::Tree(tag, None, children);
+        self.elements.push(element);
+        self
+    }
+    pub fn append_element_with_attrs<F>(
+        mut self,
+        tag: &'static str,
+        attrs: Attrs<'a>,
+        f: F,
+    ) -> Self
+    where
+        F: FnOnce(JsonMLBuilder<'a>) -> JsonML<'a>,
+    {
+        let builder = JsonMLBuilder::new();
+        let children = f(builder).elements;
+        let element = Element::Tree(tag, Some(attrs), children);
+        self.elements.push(element);
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -19,6 +66,28 @@ pub enum Element<'a> {
 #[derive(Debug)]
 pub struct Attrs<'a> {
     attrs: Vec<Attr<'a>>,
+}
+
+pub struct AttrsBuilder<'a> {
+    attrs: Vec<Attr<'a>>,
+}
+impl<'a> AttrsBuilder<'a> {
+    pub fn new() -> Self {
+        Self { attrs: vec![] }
+    }
+    pub fn build(self) -> Attrs<'a> {
+        Attrs { attrs: self.attrs }
+    }
+    pub fn attr<K, V>(mut self, key: K, value: V) -> Self
+    where
+        K: Into<CowStr<'a>>,
+        V: Into<CowStr<'a>>,
+    {
+        let key = key.into();
+        let value = value.into();
+        self.attrs.push(Attr { key, value });
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -63,7 +132,6 @@ where
     I: Iterator<Item = Event<'a>>,
 {
     fn current(&mut self) -> IResult<&Event<'a>> {
-        dbg!(self.events.peek());
         self.events.peek().ok_or_else(|| ParseError::EOF)
     }
     fn advance(&mut self) -> IResult<Event<'a>> {
@@ -73,7 +141,6 @@ where
         let mut elements = vec![];
         while let Ok(el) = self.maybe_element() {
             if let Some(el) = el {
-                // dbg!(&el);
                 elements.push(el);
             } else {
                 break;
