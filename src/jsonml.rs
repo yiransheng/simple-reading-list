@@ -385,15 +385,60 @@ This is paragraph, with [Link](https://www.google.com).
 * Foo
 * Bar
 * Baz
-- Baz 1
-- Baz 2
+    - Baz 1
+    - Baz 2
 "#;
 
         let jsonml = MDParser::new(raw).jsonml().unwrap();
         let serialized = serde_json::to_string_pretty(&jsonml).unwrap();
+        let js_value: serde_json::Value =
+            serde_json::from_str(&serialized).unwrap();
+        let expected = serde_json::json!(
+        [
+          [
+            "h3",
+            "Header 3"
+          ],
+          [
+            "p",
+            "This is paragraph, with ",
+            [
+              "a",
+              {
+                "href": "https://www.google.com"
+              },
+              "Link"
+            ],
+            "."
+          ],
+          [
+            "ul",
+            [
+              "li",
+              "Foo"
+            ],
+            [
+              "li",
+              "Bar"
+            ],
+            [
+              "li",
+              "Baz",
+              [
+                "ul",
+                [
+                  "li",
+                  "Baz 1"
+                ],
+                [
+                  "li",
+                  "Baz 2"
+                ]
+              ]
+            ]
+          ]
+        ]);
 
-        eprintln!("Parsed: \n{}", serialized);
-
-        assert!(false);
+        assert_eq!(expected, js_value,);
     }
 }
