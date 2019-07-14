@@ -66,7 +66,14 @@ pub fn decode_token(token: &str) -> Result<SlimUser, ServiceError> {
         get_secret().as_ref(),
         &Validation::default(),
     )
-    .map(|data| Ok(data.claims.into()))
+    .map(|data| {
+        let now = Local::now().timestamp();
+        if now < data.claims.exp && now >= data.claims.iat {
+            Ok(data.claims.into())
+        } else {
+            Err(ServiceError::Unauthorized)
+        }
+    })
     .map_err(|_err| ServiceError::Unauthorized)?
 }
 
