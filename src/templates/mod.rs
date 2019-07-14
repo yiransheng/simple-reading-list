@@ -64,6 +64,7 @@ where
                             }
                         }
                     }
+                    script(src = "/static/js/js-enhance.umd.js") {}
                 }
             }
         };

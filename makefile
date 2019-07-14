@@ -1,6 +1,11 @@
 
 
-local:
+build-dev:
+	mkdir -p ./assets/js && \
+	cd sitejs && npm run build && \
+	cp ./dist/*.js ../assets/js
+
+dev: build-dev
 	cargo run --bin server & \
 	toshi -c toshi_config.toml & \
 	cd admin-ui && yarn start & \

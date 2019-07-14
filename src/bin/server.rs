@@ -41,9 +41,10 @@ fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
 }
 
 fn recent_bookmarks(
+    page: web::Path<i64>,
     db: web::Data<Addr<DbExecutor>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    db.send(QueryRecent(25))
+    db.send(QueryRecent(page.into_inner()))
         .from_err()
         .and_then(|res| match res {
             Ok(bookmarks) => {
@@ -63,7 +64,7 @@ fn recent_bookmarks(
 fn recent_bookmarks_html(
     db: web::Data<Addr<DbExecutor>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    db.send(QueryRecent(25))
+    db.send(QueryRecent(1))
         .from_err()
         .and_then(|res| match res {
             Ok(bookmarks) => {
@@ -208,7 +209,7 @@ fn main() {
                             .route(web::post().to_async(login)),
                     )
                     .service(
-                        web::resource("bookmarks")
+                        web::resource("bookmarks:page/{page}")
                             .route(
                                 web::post()
                                     // .guard(guard::fn_guard(admin_guard))
