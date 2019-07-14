@@ -10,7 +10,7 @@ import {
 } from './interface';
 import {match} from './utils';
 
-const apiRoot = 'http://localhost:8080/api';
+const apiRoot = 'http://localhost:5000/api';
 
 export interface ApiCall<T> {
   (): Promise<T>;

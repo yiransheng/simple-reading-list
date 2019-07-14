@@ -3,7 +3,8 @@
 build-dev:
 	mkdir -p ./assets/js && \
 	cd sitejs && npm run build && \
-	cp ./dist/*.js ../assets/js
+	cp ./dist/*.js ../assets/js && \
+	cp ./dist/*.js.map ../assets/js
 
 dev: build-dev
 	cargo run --bin server & \
@@ -14,3 +15,4 @@ dev: build-dev
 .PHONY: clean
 
 clean:
+	rm -rf assets/js/*

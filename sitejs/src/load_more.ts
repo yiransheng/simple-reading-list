@@ -4,7 +4,7 @@ import { JsonMl, createElement } from "./jsonml";
 type Api<Req, Res> = (req: Req) => Observable<Res>;
 
 interface MoreItems {
-  data: Array<JsonMl>;
+  data: JsonMl[][];
   next_page: number | undefined;
 }
 
@@ -65,7 +65,7 @@ function getButtonUi(nextPage: number): JsonMl {
   return [
     "div",
     { class: "item" },
-    ["a", { "data-next-page": nextPage.toString() }, "More >>"]
+    ["a", { "data-next-page": nextPage.toString(), href: "#" }, "More >>"]
   ];
 }
 
@@ -93,9 +93,11 @@ export function main() {
       if (!body) {
         return;
       }
-      for (const d of data) {
-        const el = createElement(d);
-        body.appendChild(el);
+      for (const item of data) {
+        for (const jsonml of item) {
+          const el = createElement(jsonml);
+          body.appendChild(el);
+        }
       }
       if (next_page != null && Number.isFinite(next_page)) {
         const btn = createElement(getButtonUi(next_page));

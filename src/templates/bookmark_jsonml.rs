@@ -19,9 +19,19 @@ pub fn bookmark_jsonml<'a>(bookmark: &'a Bookmark) -> JsonML<'a> {
                     .attr("href", bookmark.url.as_str())
                     .build();
                 builder
-                    .append_element_with_attrs("a", link_attrs, |builder| {
+                    .append_element("h2", |builder| {
                         builder
-                            .append_text_node(bookmark.title.as_str())
+                            .append_element_with_attrs(
+                                "a",
+                                link_attrs,
+                                |builder| {
+                                    builder
+                                        .append_text_node(
+                                            bookmark.title.as_str(),
+                                        )
+                                        .build()
+                                },
+                            )
                             .build()
                     })
                     .append_element("div", move |_| body)

@@ -210,12 +210,14 @@ fn main() {
                     )
                     .service(
                         web::resource("bookmarks:page/{page}")
-                            .route(
-                                web::post()
-                                    // .guard(guard::fn_guard(admin_guard))
-                                    .to_async(create_bookmark),
-                            )
                             .route(web::get().to_async(recent_bookmarks)),
+                    )
+                    .service(
+                        web::resource("bookmarks").route(
+                            web::post()
+                                .guard(guard::fn_guard(admin_guard))
+                                .to_async(create_bookmark),
+                        ),
                     )
                     .service(
                         web::resource("bookmarks/search")

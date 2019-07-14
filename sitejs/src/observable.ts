@@ -109,6 +109,7 @@ class ObservableMap<T, U> extends Observable<U> {
 class SwitchMap<T, U> extends Observable<U> {
   private unsubSource: Map<Subscriber<U>, Unsubscribe> = new Map()
   private unsubLatest: Map<Subscriber<U>, Unsubscribe> = new Map()
+  private sourceCompleted = false;
 
   constructor(private source: Observable<T>, private mapper: (s: T) => Observable<U>) {
     super()
@@ -128,22 +129,18 @@ class SwitchMap<T, U> extends Observable<U> {
           this.mapper(value).subscribe({
             next: value => sub.next(value),
             complete: () => {
-              const unsubSource = this.unsubSource.get(sub)
-              if (unsubSource) {
-                unsubSource()
-                this.unsubSource.delete(sub)
+              if (this.sourceCompleted) {
+                sub.complete();
               }
-              sub.complete()
-            }
+            },
           })
         )
       },
       complete: () => {
-        for (const [sub, unsubSource] of this.unsubSource) {
-          if (!this.unsubLatest.has(sub)) {
-            unsubSource()
-          }
+        for (const [_sub, unsubSource] of this.unsubSource) {
+          unsubSource()
         }
+        this.sourceCompleted = true;
       }
     })
 
