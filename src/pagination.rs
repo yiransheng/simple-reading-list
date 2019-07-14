@@ -41,6 +41,7 @@ impl<T> Paginated<T> {
     where
         Self: LoadQuery<PgConnection, (U, i64)>,
     {
+        let page = self.page;
         let per_page = self.per_page;
         let results = self.load::<(U, i64)>(conn)?;
         let total = results.get(0).map(|x| x.1).unwrap_or(0);
@@ -49,6 +50,7 @@ impl<T> Paginated<T> {
         Ok(PageData {
             data: records,
             total_pages,
+            next_page: Some(page + 1).filter(|p| *p <= total_pages),
         })
     }
 }

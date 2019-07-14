@@ -1,0 +1,113 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:500,300);
+$baseline: (1rem)*(1.375);
+
+button {
+  cursor: pointer;
+  margin: 0 0 $baseline;
+  padding: $baseline*0.25 1.5rem;
+  min-width: 8rem;
+
+  border: 0;
+  outline: 0;
+  background: rgba(0,0,0,0.5);
+  color: #ccc;
+  border-radius: 3px;
+  box-shadow: 0px 4px rgba(0, 0, 0, 0.2);
+
+
+  &:hover, &:focus {
+    background: rgba(0,0,0,0.6);
+    color: #cfcfcf;
+  }
+
+  &.right {
+    float: right;
+  }
+  &.right::after {
+    content: "";
+    clear: both;
+    display: table;
+  }
+
+  @media (max-width: 960px)  {
+    & {
+      width: 100%;
+    }
+  }
+}
+
+
+.input_fieldset {
+  margin: 0 0 $baseline;
+  padding: 0;
+  border: none;
+
+  > label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: $baseline;
+    margin: 0;
+  }
+  > input[type="text"],
+  > input[type="password"] {
+    display: block;
+    width: 100%;
+    font-size: 1rem;
+    padding: $baseline*0.25 0.5rem;
+
+    background-color: #fafaff;
+    border-radius: .15rem;
+    border: 1px solid rgba(0, 0, 0, .2);
+    outline: none;
+    
+    transition: background-color 0.4s,
+      border-color 0.4s,
+      border-radius 0.5s;
+
+    &:focus {
+      border-color: rgba(0, 0, 0, .5);
+      background-color: #fff;
+      box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, .2);
+      border-radius: .25rem;
+    }
+  }
+}
+
+.textarea_fieldset {
+  margin: 0 0 $baseline;
+  padding: 0;
+  border: none;
+
+  > label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    line-height: $baseline;
+    margin: 0;
+  }
+  > textarea {
+    display: block;
+    width: 100%;
+    font-size: 1rem;
+    padding: $baseline*0.25 0.5rem;
+
+    background-color: #fafaff;
+    border-radius: .15rem;
+    border: 1px solid rgba(0, 0, 0, .2);
+    outline: none;
+    
+    transition: background-color 0.4s,
+      border-color 0.4s,
+      border-radius 0.5s;
+
+    &:focus {
+      border-color: rgba(0, 0, 0, .5);
+      background-color: #fff;
+      box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, .2);
+      border-radius: .25rem;
+    }
+  }
+}

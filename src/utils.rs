@@ -1,4 +1,7 @@
-use actix_web::dev::RequestHead;
+use actix_web::{
+    dev::{Payload, RequestHead},
+    FromRequest, HttpRequest,
+};
 use chrono::{Duration, Local};
 use jsonwebtoken::{decode, encode, Header, Validation};
 use serde_derive::*;
@@ -41,6 +44,16 @@ impl From<Claims> for SlimUser {
     }
 }
 
+impl FromRequest for SlimUser {
+    type Config = ();
+    type Error = ServiceError;
+    type Future = Result<SlimUser, ServiceError>;
+
+    fn from_request(req: &HttpRequest, _pl: &mut Payload) -> Self::Future {
+        get_admin(req.head()).ok_or_else(|| ServiceError::Unauthorized)
+    }
+}
+
 pub fn create_token(data: &SlimUser) -> Result<String, ServiceError> {
     let claims = Claims::from_user(data);
     encode(&Header::default(), &claims, get_secret().as_ref())
@@ -53,7 +66,14 @@ pub fn decode_token(token: &str) -> Result<SlimUser, ServiceError> {
         get_secret().as_ref(),
         &Validation::default(),
     )
-    .map(|data| Ok(data.claims.into()))
+    .map(|data| {
+        let now = Local::now().timestamp();
+        if now < data.claims.exp && now >= data.claims.iat {
+            Ok(data.claims.into())
+        } else {
+            Err(ServiceError::Unauthorized)
+        }
+    })
     .map_err(|_err| ServiceError::Unauthorized)?
 }
 
@@ -69,12 +89,17 @@ fn extract_bearer_creds(token: &str) -> Result<&str, ServiceError> {
 }
 
 pub fn admin_guard(req: &RequestHead) -> bool {
+    match get_admin(req).filter(|user| user.is_admin) {
+        Some(_) => true,
+        _ => false,
+    }
+}
+
+fn get_admin(req: &RequestHead) -> Option<SlimUser> {
     req.headers()
         .get("Authorization")
         .and_then(|token| token.to_str().ok())
         .and_then(|token| decode_token(token).ok())
-        .map(|user| user.is_admin)
-        .unwrap_or(false)
 }
 
 fn get_secret() -> String {

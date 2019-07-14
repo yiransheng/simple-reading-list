@@ -33,7 +33,7 @@ pub struct NewUser<'a> {
     pub is_admin: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct SlimUser {
     pub email: String,
     pub is_admin: bool,
@@ -52,17 +52,19 @@ impl From<User> for SlimUser {
 pub struct PageData<T> {
     pub data: Vec<T>,
     pub total_pages: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_page: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResults {
-    hits: u32,
-    docs: Vec<ScoredDoc>,
+    pub hits: u32,
+    pub docs: Vec<ScoredDoc>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoredDoc {
-    score: f64,
-    doc: BookmarkDoc,
+    pub score: f64,
+    pub doc: BookmarkDoc,
 }
 
 #[derive(Debug, Clone, Queryable, Deserialize, Serialize, PartialEq)]

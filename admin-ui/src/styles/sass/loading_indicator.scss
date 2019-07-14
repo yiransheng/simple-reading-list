@@ -1,0 +1,16 @@
+.loading-word {
+  font-family: monospace;
+  text-shadow: 0 0 10px rgba(50, 255, 50, 0.5), 0 0 5px rgba(100, 255, 100, 0.5);
+  transition: opacity 500ms;
+
+  span {
+    display: inline-block;
+    transition: transform 500ms;
+  }
+  .letter {
+    transform: translateX(0) scale(1);
+  }
+  .glitch {
+    transform: translateX(30%) scale(0.9);
+  }
+}

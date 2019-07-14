@@ -2,19 +2,31 @@ use std::env;
 
 use actix::prelude::*;
 use actix_web::{
-    error::ResponseError, guard, http, middleware, web, App, Error,
-    HttpRequest, HttpResponse, HttpServer,
+    body::Body,
+    error::ResponseError,
+    guard,
+    http::{self, header},
+    middleware,
+    middleware::cors,
+    web, App, Error, HttpRequest, HttpResponse, HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use dotenv::dotenv;
-use futures::{future, Future};
+use futures::{
+    future::{self, ok, Either},
+    Future,
+};
+use horrorshow::Template;
 use serde_json::json;
 
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
-use common::models::{Bookmark, BookmarkDoc, NewBookmark};
+use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
 use common::search::{Search, SearchClient};
+use common::templates::{
+    bookmark_jsonml, BookmarkItem, IntoBookmark, PageTemplate,
+};
 use common::utils::{admin_guard, create_token};
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
@@ -29,23 +41,92 @@ fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
 }
 
 fn recent_bookmarks(
+    page: web::Path<i64>,
     db: web::Data<Addr<DbExecutor>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    db.send(QueryRecent(25))
+    db.send(QueryRecent(page.into_inner()))
         .from_err()
         .and_then(|res| match res {
-            Ok(bookmarks) => Ok(HttpResponse::Ok().json(bookmarks)),
+            Ok(bookmarks) => {
+                let contents: Vec<_> =
+                    bookmarks.data.iter().map(bookmark_jsonml).collect();
+                let res = PageData {
+                    data: contents,
+                    total_pages: bookmarks.total_pages,
+                    next_page: bookmarks.next_page,
+                };
+                Ok(HttpResponse::Ok().json(res))
+            }
+            _ => Ok(HttpResponse::InternalServerError().into()),
+        })
+}
+
+fn recent_bookmarks_html(
+    db: web::Data<Addr<DbExecutor>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    db.send(QueryRecent(1))
+        .from_err()
+        .and_then(|res| match res {
+            Ok(bookmarks) => {
+                let items = bookmarks.data.into_iter().map(BookmarkItem::new);
+                let page = PageTemplate::new_with_next_page(
+                    bookmarks.next_page,
+                    items,
+                );
+                match page.into_string() {
+                    Ok(body) => Ok(HttpResponse::Ok()
+                        .content_type("text/html")
+                        .body(body)),
+                    _ => Ok(HttpResponse::InternalServerError().into()),
+                }
+            }
             _ => Ok(HttpResponse::InternalServerError().into()),
         })
 }
 
 fn search_bookmark(
     search_client: web::Data<SearchClient>,
-    search: web::Query<Search>,
+    search: Option<web::Query<Search>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
-    search_client
-        .query_docs(&search.q)
-        .map(|results| HttpResponse::Ok().json(results))
+    match search {
+        Some(ref search) if !search.q.is_empty() => Either::A(
+            search_client
+                .query_docs(dbg!(&search.q))
+                .map(move |results| HttpResponse::Ok().json(results)),
+        ),
+        _ => Either::B(ok(HttpResponse::BadRequest().into())),
+    }
+}
+
+fn search_bookmark_html(
+    search_client: web::Data<SearchClient>,
+    search: Option<web::Query<Search>>,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    match search {
+        Some(ref search) if !search.q.is_empty() => {
+            let query_string = search.q.clone();
+            Either::A(search_client.query_docs(&search.q).and_then(
+                move |bookmarks| {
+                    let items = bookmarks
+                        .docs
+                        .into_iter()
+                        .map(|doc| BookmarkItem::new(doc.doc));
+                    let page =
+                        PageTemplate::new_with_query(items, query_string);
+                    match page.into_string() {
+                        Ok(body) => Ok(HttpResponse::Ok()
+                            .content_type("text/html")
+                            .body(body)),
+                        _ => Ok(HttpResponse::InternalServerError().into()),
+                    }
+                },
+            ))
+        }
+        _ => Either::B(ok(HttpResponse::Found()
+            .header(http::header::LOCATION, "/")
+            .finish()
+            .into_body())),
+    }
 }
 
 fn create_bookmark(
@@ -84,11 +165,18 @@ fn login(
         .and_then(move |res| match res {
             Ok(user) => {
                 let token = create_token(&user)?;
-                let token = json!({ "token": token });
-                Ok(HttpResponse::Ok().json(token))
+                let res = json!({ "token": token, "user": user });
+                Ok(HttpResponse::Ok().json(res))
             }
             Err(err) => Ok(err.error_response()),
         })
+}
+
+fn whoami(user: Result<SlimUser, ServiceError>) -> Result<HttpResponse, Error> {
+    match user {
+        Ok(user) => Ok(HttpResponse::Ok().json(user)),
+        Err(err) => Ok(err.error_response()),
+    }
 }
 
 fn main() {
@@ -102,28 +190,49 @@ fn main() {
     // Start http server
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                cors::Cors::new()
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+                    .allowed_headers(vec![
+                        header::AUTHORIZATION,
+                        header::ACCEPT,
+                    ])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .max_age(3600),
+            )
             .data(addr.clone())
             .data(SearchClient::new())
             .service(
                 web::scope("/api")
                     .service(
                         web::resource("auth")
-                            // .route(web::get().to_async(whoami))
+                            .route(web::get().to(whoami))
                             .route(web::post().to_async(login)),
                     )
                     .service(
-                        web::resource("bookmarks")
-                            .route(
-                                web::post()
-                                    // .guard(guard::fn_guard(admin_guard))
-                                    .to_async(create_bookmark),
-                            )
+                        web::resource("bookmarks:page/{page}")
                             .route(web::get().to_async(recent_bookmarks)),
+                    )
+                    .service(
+                        web::resource("bookmarks").route(
+                            web::post()
+                                .guard(guard::fn_guard(admin_guard))
+                                .to_async(create_bookmark),
+                        ),
                     )
                     .service(
                         web::resource("bookmarks/search")
                             .route(web::get().to_async(search_bookmark)),
                     ),
+            )
+            .service(
+                web::resource("/")
+                    .route(web::get().to_async(recent_bookmarks_html)),
+            )
+            .service(
+                web::resource("/search")
+                    .route(web::get().to_async(search_bookmark_html)),
             )
     })
     .bind("127.0.0.1:8080")

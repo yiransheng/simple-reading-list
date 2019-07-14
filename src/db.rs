@@ -15,7 +15,7 @@ impl Actor for DbExecutor {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct QueryRecent(pub u32);
+pub struct QueryRecent(pub i64);
 
 #[derive(Debug, Deserialize)]
 pub struct AuthData {
@@ -41,9 +41,9 @@ impl Handler<QueryRecent> for DbExecutor {
         let conn: &PgConnection = &self.0.get().unwrap();
 
         bookmarks
-            .order(created.desc())
-            .paginate(1)
-            .per_page(1)
+            .order_by(created.desc())
+            .paginate(msg.0)
+            .per_page(20)
             .load_and_count_pages::<Bookmark>(conn)
             .map_err(Into::into)
     }
