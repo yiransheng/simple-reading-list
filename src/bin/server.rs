@@ -141,8 +141,12 @@ fn create_bookmark(
                 Ok(created) => {
                     eprintln!("DB ok");
                     let doc: BookmarkDoc = created.clone().into();
+                    let created2 = created.clone();
                     Box::new(
-                        search_client.insert_doc(doc).map(move |_| Ok(created)),
+                        search_client
+                            .insert_doc(doc)
+                            .map(|_| Ok(created))
+                            .or_else(|_| future::ok(Ok(created2))),
                     )
                 }
                 Err(_) => {

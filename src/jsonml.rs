@@ -139,11 +139,13 @@ where
     }
     fn elements(&mut self) -> IResult<Vec<Element<'a>>> {
         let mut elements = vec![];
-        while let Ok(el) = self.maybe_element() {
-            if let Some(el) = el {
-                elements.push(el);
-            } else {
-                break;
+        let mut i = 0;
+        while let Some(el) = self.maybe_element()? {
+            elements.push(el);
+            i = i + 1;
+            // just in case
+            if i > 10000 {
+                panic!("Possible infinite loop! (MDParser)");
             }
         }
 
@@ -159,8 +161,14 @@ where
         let el = match current {
             Event::Text(_) => self.text()?,
             Event::Start(_) => self.tag()?,
-            Event::SoftBreak => Element::Text("\n".into()),
-            Event::HardBreak => Element::SelfClosing("hr", None),
+            Event::SoftBreak => {
+                self.advance()?;
+                Element::Text("\n".into())
+            }
+            Event::HardBreak => {
+                self.advance()?;
+                Element::SelfClosing("hr", None)
+            }
             Event::Code(_) => unimplemented!(),
             Event::End(_) => return Ok(None),
             _ => return Err(ParseError::NotSupported("unsupported feature")),
