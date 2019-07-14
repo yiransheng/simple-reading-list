@@ -1,6 +1,8 @@
 
 
-build-dev:
+build-dev:build-js
+
+build-js:
 	mkdir -p ./assets/js && \
 	cd sitejs && npm run build && \
 	cp ./dist/*.js ../assets/js && \

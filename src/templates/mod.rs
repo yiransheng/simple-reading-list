@@ -11,6 +11,7 @@ pub use bookmark_jsonml::bookmark_jsonml;
 
 pub struct PageTemplate<I> {
     next_page: Option<i64>,
+    query_str: Option<String>,
     items: I,
 }
 
@@ -18,11 +19,23 @@ impl<I> PageTemplate<I> {
     pub fn new(items: I) -> Self {
         Self {
             next_page: None,
+            query_str: None,
+            items,
+        }
+    }
+    pub fn new_with_query(items: I, q: String) -> Self {
+        Self {
+            next_page: None,
+            query_str: Some(q),
             items,
         }
     }
     pub fn new_with_next_page(next_page: Option<i64>, items: I) -> Self {
-        Self { next_page, items }
+        Self {
+            next_page,
+            items,
+            query_str: None,
+        }
     }
 }
 
@@ -32,6 +45,16 @@ where
     R: RenderOnce,
 {
     fn render_once(self, tmpl: &mut TemplateBuffer) {
+        let Self {
+            items,
+            query_str,
+            next_page,
+        } = self;
+        let q = match query_str {
+            Some(ref q) => q,
+            None => "",
+        };
+
         tmpl << html! {
             : doctype::HTML;
             html {
@@ -47,16 +70,16 @@ where
                         form(action = "/search", method = "GET") {
                             div {
                                 : Raw(ICON);
-                                input(type = "text", name = "q");
+                                input(type = "text", name = "q", value = q);
                                 input(type = "submit", value = "検索");
                             }
                         }
                     }
                     div(class = "main") {
-                        @ for t in self.items {
+                        @ for t in items {
                             |tmpl| tmpl << t
                         }
-                        @ if let Some(next_page) = self.next_page {
+                        @ if let Some(next_page) = next_page {
                             div(class = "item") {
                                 a(href = "#", data-next-page = next_page) {
                                     : "More >>"

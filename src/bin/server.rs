@@ -104,13 +104,15 @@ fn search_bookmark_html(
 ) -> impl Future<Item = HttpResponse, Error = Error> {
     match search {
         Some(ref search) if !search.q.is_empty() => {
+            let query_string = search.q.clone();
             Either::A(search_client.query_docs(&search.q).and_then(
                 move |bookmarks| {
                     let items = bookmarks
                         .docs
                         .into_iter()
                         .map(|doc| BookmarkItem::new(doc.doc));
-                    let page = PageTemplate::new(items);
+                    let page =
+                        PageTemplate::new_with_query(items, query_string);
                     match page.into_string() {
                         Ok(body) => Ok(HttpResponse::Ok()
                             .content_type("text/html")
