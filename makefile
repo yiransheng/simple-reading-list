@@ -2,12 +2,11 @@ build-server-docker:
 	docker build -t reads.yiransheng.com/server:latest .
 
 build-toshi-docker:
-	cp toshi_config.toml __toshi__version ./Toshi/ && \
+	cp toshi_config.toml ./Toshi/ && \
 	cp toshi.Dockerfile ./Toshi/Dockerfile && \
-	pushd ./Toshi && \
-	git checkout $(cat __toshi__version) &&
-	docker build -t reads.yiransheng.com/toshi_bin:latest . && \
-	popd
+	cd ./Toshi && \
+	git checkout $(cat ../__toshi__version) && \
+	docker build -t reads.yiransheng.com/toshi_bin:latest .
 
 
 build-dev:build-js
