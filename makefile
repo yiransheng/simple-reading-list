@@ -1,12 +1,16 @@
-build-server-docker:
-	docker build -t reads.yiransheng.com/server:latest .
+SERVER_BIN := reads.yiransheng.com/server
+TOSHI_BIN := reads.yiransheng.com/toshi_bin
 
-build-toshi-docker:
-	cp toshi_config.toml ./Toshi/ && \
-	cp toshi.Dockerfile ./Toshi/Dockerfile && \
+build-server-docker:
+	docker build -t $(SERVER_BIN):latest .
+
+build-toshi-docker: TOSHI_VERSION=$(shell cat __toshi_version)
+build-toshi-docker: __toshi_version
 	cd ./Toshi && \
-	git checkout $(cat ../__toshi__version) && \
-	docker build -t reads.yiransheng.com/toshi_bin:latest .
+	git checkout $(TOSHI_VERSION) && \
+	cd .. && \
+	docker build -f Dockerfile.toshi -t $(TOSHI_BIN):$(TOSHI_VERSION) . && \
+	docker tag $(TOSHI_BIN):$(TOSHI_VERSION) $(TOSHI_BIN):latest
 
 
 build-dev:build-js
@@ -17,9 +21,9 @@ build-js:
 	cp ./dist/*.js ../assets/js && \
 	cp ./dist/*.js.map ../assets/js
 
-dev: build-dev
+dev: build-dev build-toshi-docker
 	cargo run --bin server & \
-	toshi -c toshi_config.toml & \
+	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data $(TOSHI_BIN):latest & \
 	cd admin-ui && yarn start & \
 	caddy
 
