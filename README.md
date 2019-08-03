@@ -19,6 +19,7 @@ A very simple reading list/bookmark app.
 * rust tool chain (rustc, cargo, rustup)
 * docker
 * node & yarn
+* [Caddy](https://caddy.community)
 
 
 
