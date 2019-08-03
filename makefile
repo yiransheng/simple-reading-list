@@ -8,14 +8,19 @@ RELEASE := $(shell git rev-parse --verify HEAD)
 JS_SRC := $(shell find sitejs/src -name '*.ts')
 ADMIN_SRC := $(shell find admin-ui/src -name '*')
 
-build-server-docker:
-	docker build -f docker/Dockerfile.server -t $(SERVER_BIN):latest .
+docker: $(OUT)/build-toshi-docker $(OUT)/build-server-docker $(OUT)/build-caddy-docker
 
 $(OUT):
 	mkdir -p $(OUT)
 
+$(OUT)/build-server-docker:
+	( [[ -n $$(docker images -q $(SERVER_BIN):$(RELEASE)) ]] || \
+	  docker build -f docker/Dockerfile.server -t $(SERVER_BIN):$(RELEASE) . ) && \
+	docker tag $(SERVER_BIN):$(RELEASE) $(SERVER_BIN):latest && \
+	echo $$(docker images -q $(SERVER_BIN):$(RELEASE)) >> $(OUT)/build-server
+
 $(OUT)/build-toshi-docker: TOSHI_VERSION=$(shell cat conf/__toshi_version)
-$(OUT)/build-toshi-docker: $(OUT)
+$(OUT)/build-toshi-docker: $(OUT) conf/__toshi_version
 	pushd ./Toshi && \
 	git checkout $(TOSHI_VERSION) && \
 	popd && \
@@ -56,5 +61,6 @@ dev: build-dev $(OUT)/build-toshi-docker
 
 clean:
 	rm -rf assets/js/*
-	docker rmi $$(cat $(OUT)/build-caddy) --force
+	docker rmi $$(cat $(OUT)/build-caddy) --force || true
+	docker rmi $$(cat $(OUT)/build-server) --force || true
 	rm -rf $(OUT)/*
