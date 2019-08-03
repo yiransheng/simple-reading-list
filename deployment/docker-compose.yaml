@@ -1,0 +1,10 @@
+version: '0.1'
+services:
+  toshi:
+    image: "reads.yiransheng.com/toshi_bin:latest"
+  web:
+    image: "reads.yiransheng.com/caddy:latest"
+    ports:
+      - "127.0.0.1:7788:2019"
+
+
