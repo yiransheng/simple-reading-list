@@ -1,33 +1,41 @@
+SHELL := /bin/bash
+OUT := _out
 SERVER_BIN := reads.yiransheng.com/server
 TOSHI_BIN := reads.yiransheng.com/toshi_bin
 
 build-server-docker:
 	docker build -t $(SERVER_BIN):latest .
 
-build-toshi-docker: TOSHI_VERSION=$(shell cat __toshi_version)
-build-toshi-docker: __toshi_version
-	cd ./Toshi && \
+$(OUT):
+	mkdir -p $(OUT)
+
+$(OUT)/build-toshi-docker: TOSHI_VERSION=$(shell cat __toshi_version)
+$(OUT)/build-toshi-docker: $(OUT)
+	pushd ./Toshi && \
 	git checkout $(TOSHI_VERSION) && \
-	cd .. && \
+	popd && \
 	docker build -f Dockerfile.toshi -t $(TOSHI_BIN):$(TOSHI_VERSION) . && \
-	docker tag $(TOSHI_BIN):$(TOSHI_VERSION) $(TOSHI_BIN):latest
+	docker tag $(TOSHI_BIN):$(TOSHI_VERSION) $(TOSHI_BIN):latest && \
+	echo "$(TOSHI_BIN):$(TOSHI_VERSION)" > $(OUT)/build-toshi-docker
 
-
-build-dev:build-js
-
-build-js:
+$(OUT)/build-js: $(OUT)
 	mkdir -p ./assets/js && \
-	cd sitejs && npm run build && \
+	pushd sitejs && npm run build && \
 	cp ./dist/*.js ../assets/js && \
-	cp ./dist/*.js.map ../assets/js
+	cp ./dist/*.js.map ../assets/js && \
+	popd && \
+	echo "done" > $(OUT)/build-js
 
-dev: build-dev build-toshi-docker
+build-dev: $(OUT)/build-js
+
+dev: build-dev $(OUT)/build-toshi-docker
 	cargo run --bin server & \
 	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data $(TOSHI_BIN):latest & \
 	cd admin-ui && yarn start & \
 	caddy
 
-.PHONY: clean
+.PHONY: clean build-dev dev
 
 clean:
 	rm -rf assets/js/*
+	rm -rf $(OUT)/*

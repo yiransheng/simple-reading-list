@@ -1,4 +1,5 @@
 /data
+/_out
 /target
 **/*.rs.bk
 
