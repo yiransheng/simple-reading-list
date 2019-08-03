@@ -43,7 +43,7 @@ $(OUT)/build-admin: $(OUT) $(ADMIN_SRC)
 
 $(OUT)/build-js: $(OUT) $(JS_SRC)
 	mkdir -p ./assets/js && \
-	pushd sitejs && npm run build && \
+	pushd sitejs && yarn build && \
 	cp ./dist/*.js ../assets/js && \
 	cp ./dist/*.js.map ../assets/js && \
 	popd && \

@@ -10,7 +10,6 @@ import {
 } from './interface';
 import {match} from './utils';
 
-
 let apiRoot: string;
 
 if (process.env.NODE_ENV === 'production') {
