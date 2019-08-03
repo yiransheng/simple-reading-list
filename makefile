@@ -2,8 +2,11 @@ SHELL := /bin/bash
 OUT := _out
 SERVER_BIN := reads.yiransheng.com/server
 TOSHI_BIN := reads.yiransheng.com/toshi_bin
+CADDY_BIN := reads.yiransheng.com/caddy
 
+RELEASE := $(shell git rev-parse --verify HEAD)
 JS_SRC := $(shell find sitejs/src -name '*.ts')
+ADMIN_SRC := $(shell find admin-ui/src -name '*')
 
 build-server-docker:
 	docker build -f docker/Dockerfile.server -t $(SERVER_BIN):latest .
@@ -16,10 +19,15 @@ $(OUT)/build-toshi-docker: $(OUT)
 	pushd ./Toshi && \
 	git checkout $(TOSHI_VERSION) && \
 	popd && \
-	( docker images -q $(TOSHI_BIN):$(TOSHI_VERSION) || \
+	( [[ -n $$(docker images -q $(TOSHI_BIN):$(TOSHI_VERSION)) ] || \
 	  docker build -f docker/Dockerfile.toshi -t $(TOSHI_BIN):$(TOSHI_VERSION) . ) && \
 	docker tag $(TOSHI_BIN):$(TOSHI_VERSION) $(TOSHI_BIN):latest && \
 	echo $$(docker images -q $(TOSHI_BIN):$(TOSHI_VERSION)) > $(OUT)/build-toshi-docker
+
+$(OUT)/build-admin: $(OUT) $(ADMIN_SRC)
+	pushd admin-ui && yarn build && \
+	popd && \
+	echo "done" > $(OUT)/build-admin
 
 $(OUT)/build-js: $(OUT) $(JS_SRC)
 	mkdir -p ./assets/js && \
@@ -28,6 +36,12 @@ $(OUT)/build-js: $(OUT) $(JS_SRC)
 	cp ./dist/*.js.map ../assets/js && \
 	popd && \
 	echo "done" > $(OUT)/build-js
+
+$(OUT)/build-caddy: $(OUT)/build-admin $(OUT)/build-js
+	( [[ -n $$(docker images -q $(CADDY_BIN):$(RELEASE)) ]] || \
+	  docker build -f docker/Dockerfile.caddy -t $(CADDY_BIN):$(RELEASE) . ) && \
+	docker tag $(CADDY_BIN):$(RELEASE) $(CADDY_BIN):latest && \
+	echo $$(docker images -q $(CADDY_BIN):$(RELEASE)) >> $(OUT)/build-caddy
 
 build-dev: $(OUT)/build-js
 
@@ -42,4 +56,5 @@ dev: build-dev $(OUT)/build-toshi-docker
 
 clean:
 	rm -rf assets/js/*
+	docker rmi $$(cat $(OUT)/build-caddy) --force
 	rm -rf $(OUT)/*

@@ -1,0 +1,9 @@
+FROM abiosoft/caddy:1.0.1-no-stats
+
+COPY conf/Caddyfile /etc/Caddyfile
+
+COPY admin-ui/build /admin-ui
+
+COPY assets /assets
+
+RUN ls / -al
