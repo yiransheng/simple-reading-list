@@ -1,0 +1,13 @@
+0.0.0.0:2019/admin {
+  gzip
+  root /admin-ui
+}
+
+0.0.0.0:2019/static {
+  gzip
+  root /assets
+}
+
+0.0.0.0:2019 {
+  proxy / server:8080
+}

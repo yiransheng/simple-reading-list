@@ -10,7 +10,14 @@ import {
 } from './interface';
 import {match} from './utils';
 
-const apiRoot = 'http://localhost:5000/api';
+
+let apiRoot: string;
+
+if (process.env.NODE_ENV === 'production') {
+  apiRoot = '/api';
+} else {
+  apiRoot = 'http://localhost:5000/api';
+}
 
 export interface ApiCall<T> {
   (): Promise<T>;

@@ -26,7 +26,7 @@ pub struct SearchClient {
 impl SearchClient {
     pub fn new() -> Self {
         let toshi_host = std::env::var("TOSHI_HOST")
-            .unwrap_or_else(|_| "localhost:8000".to_owned());
+            .unwrap_or_else(|_| "localhost:7000".to_owned());
 
         SearchClient {
             rest_client: Client::default(),
@@ -108,7 +108,7 @@ fn insert_doc_endpoint(toshi_host: &str) -> uri::Uri {
         .scheme("http")
         .authority(toshi_host)
         // LOCAL Toshi workaround:...
-        .path_and_query("/bookmarks/_add")
+        .path_and_query("/bookmarks")
         .build()
         .expect("Invalid endpoint")
 }
