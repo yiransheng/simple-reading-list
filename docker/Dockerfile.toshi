@@ -8,7 +8,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 
 RUN mkdir -p ./.cargo
 
-COPY cargo_config ./.cargo/config
+COPY ./conf/cargo_config ./.cargo/config
 
 COPY ./Toshi ./
 
@@ -22,6 +22,6 @@ FROM alpine:3.10.1
 
 COPY --from=build /build-out/* /
 
-COPY ./toshi_config.toml ./config.toml
+COPY ./conf/toshi_config.toml ./config.toml
 
 CMD /toshi -c config.toml
