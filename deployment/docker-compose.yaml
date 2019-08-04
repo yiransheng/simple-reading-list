@@ -1,10 +1,44 @@
-version: '0.1'
+version: '3.2'
 services:
-  toshi:
-    image: "reads.yiransheng.com/toshi_bin:latest"
   web:
     image: "reads.yiransheng.com/caddy:latest"
     ports:
-      - "127.0.0.1:7788:2019"
+      - "127.0.0.1:3000:2019"
+    depends_on:
+      - server
+  server:
+    image: "reads.yiransheng.com/server:latest"
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
+      TOSHI_HOST: "${TOSHI_HOST}"
+      JWT_SECRET: "${JWT_SECRET}"
+    depends_on:
+      - db
+      - toshi
+      - create_admin_user
+  create_admin_user:
+    image: "reads.yiransheng.com/server:latest"
+    command: sh -c '/create-admin-user -u ${ADMIN_USER} -p ${ADMIN_PASSWORD}'
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
+    depends_on:
+      - db
+      - toshi
+  toshi:
+    image: "reads.yiransheng.com/toshi_bin:latest"
+    volumes:
+      - toshi_data:/data
+  db:
+    image: "postgres:10.9-alpine"
+    volumes:
+      - pg_data:/var/lib/postgresql/data/pg_data
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB}" 
+      POSTGRES_USER: "${POSTGRES_USER}" 
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      PGDATA: /var/lib/postgresql/data/pg_data
+volumes:
+  pg_data:
+  toshi_data:
 
 
