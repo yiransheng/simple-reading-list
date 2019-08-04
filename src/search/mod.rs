@@ -1,6 +1,6 @@
 use actix_web::client::Client;
 use actix_web::http::{header::CONTENT_TYPE, uri, StatusCode};
-use actix_web::{web::Bytes, Error};
+use actix_web::Error;
 use futures::future::Future;
 use serde_derive::*;
 
@@ -9,6 +9,7 @@ mod query;
 mod query_parser;
 
 use self::query_parser::QueryParser;
+use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::{BookmarkDoc, SearchResults};
 
@@ -25,13 +26,10 @@ pub struct SearchClient {
 
 impl SearchClient {
     pub fn new() -> Self {
-        let toshi_host = std::env::var("TOSHI_HOST")
-            .unwrap_or_else(|_| "localhost:7000".to_owned());
-
         SearchClient {
             rest_client: Client::default(),
-            insert_doc_endpoint: insert_doc_endpoint(toshi_host.as_ref()),
-            query_doc_endpoint: query_doc_endpoint(toshi_host.as_ref()),
+            insert_doc_endpoint: insert_doc_endpoint(&CONFIG.toshi_url),
+            query_doc_endpoint: query_doc_endpoint(&CONFIG.toshi_url),
         }
     }
 

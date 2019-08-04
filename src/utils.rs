@@ -6,6 +6,7 @@ use chrono::{Duration, Local};
 use jsonwebtoken::{decode, encode, Header, Validation};
 use serde_derive::*;
 
+use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::SlimUser;
 
@@ -56,14 +57,14 @@ impl FromRequest for SlimUser {
 
 pub fn create_token(data: &SlimUser) -> Result<String, ServiceError> {
     let claims = Claims::from_user(data);
-    encode(&Header::default(), &claims, get_secret().as_ref())
+    encode(&Header::default(), &claims, CONFIG.jwt_secret.as_slice())
         .map_err(|_err| ServiceError::InternalServerError)
 }
 
 pub fn decode_token(token: &str) -> Result<SlimUser, ServiceError> {
     decode::<Claims>(
         extract_bearer_creds(token)?,
-        get_secret().as_ref(),
+        CONFIG.jwt_secret.as_slice(),
         &Validation::default(),
     )
     .map(|data| {
@@ -100,8 +101,4 @@ fn get_admin(req: &RequestHead) -> Option<SlimUser> {
         .get("Authorization")
         .and_then(|token| token.to_str().ok())
         .and_then(|token| decode_token(token).ok())
-}
-
-fn get_secret() -> String {
-    std::env::var("JWT_SECRET").expect("Missing jwt secret env var")
 }
