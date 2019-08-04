@@ -4,6 +4,7 @@ SERVER_BIN := reads.yiransheng.com/server
 TOSHI_BIN := reads.yiransheng.com/toshi_bin
 CADDY_BIN := reads.yiransheng.com/caddy
 
+SERVER_SRC := $(shell find src -name '*')
 RELEASE := $(shell git rev-parse --verify HEAD)
 JS_SRC := $(shell find sitejs/src -name '*.ts')
 ADMIN_SRC := $(shell find admin-ui/src -name '*')
@@ -20,7 +21,12 @@ dev: $(OUT)/build-js $(OUT)/build-toshi-docker
 $(OUT):
 	mkdir -p $(OUT)
 
-$(OUT)/build-server-docker:
+dummy_src: $(SERVER_SRC)
+	mkdir -p dummy_src/bin
+	echo 'fn main() {}' | tee $$(find src/bin -name '*.rs' | sed 's/src/dummy_src/') 
+	echo 'syntax error' > dummy_src/lib.rs
+
+$(OUT)/build-server-docker: dummy_src $(SERVER_SRC)
 	( [[ -n $$(docker images -q $(SERVER_BIN):$(RELEASE)) ]] || \
 	  docker build -f docker/Dockerfile.server -t $(SERVER_BIN):$(RELEASE) . ) && \
 	docker tag $(SERVER_BIN):$(RELEASE) $(SERVER_BIN):latest && \

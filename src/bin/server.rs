@@ -1,5 +1,8 @@
 use std::env;
 
+#[macro_use]
+extern crate diesel_migrations;
+
 use actix::prelude::*;
 use actix_web::{
     body::Body,
@@ -12,6 +15,7 @@ use actix_web::{
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
+use diesel_migrations::embed_migrations;
 use dotenv::dotenv;
 use futures::{
     future::{self, ok, Either},
@@ -28,6 +32,8 @@ use common::templates::{
     bookmark_jsonml, BookmarkItem, IntoBookmark, PageTemplate,
 };
 use common::utils::{admin_guard, create_token};
+
+embed_migrations!("migrations");
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
     let database_url =
@@ -183,11 +189,20 @@ fn whoami(user: Result<SlimUser, ServiceError>) -> Result<HttpResponse, Error> {
     }
 }
 
+fn db_migrations(pool: &r2d2::Pool<ConnectionManager<PgConnection>>) {
+    let conn: &PgConnection = &pool.get().unwrap();
+    embedded_migrations::run_with_output(conn, &mut std::io::stdout())
+        .expect("Failed to run migrations");
+}
+
 fn main() {
     dotenv().ok();
 
     let sys = actix_rt::System::new("bookmarks");
     let pool = create_pool();
+
+    db_migrations(&pool);
+
     // Start 4 parallel db executors
     let addr: Addr<DbExecutor> =
         SyncArbiter::start(4, move || DbExecutor(pool.clone()));
@@ -239,10 +254,10 @@ fn main() {
                     .route(web::get().to_async(search_bookmark_html)),
             )
     })
-    .bind("127.0.0.1:8080")
+    .bind("0.0.0.0:8080")
     .unwrap()
     .start();
 
-    println!("Started http server: 127.0.0.1:8080");
+    println!("Started http server: 0.0.0.0:8080");
     let _ = sys.run();
 }
