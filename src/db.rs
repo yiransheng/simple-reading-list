@@ -15,9 +15,6 @@ impl Actor for DbExecutor {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct DoMigrations {}
-
-#[derive(Debug, Copy, Clone)]
 pub struct QueryRecent(pub i64);
 
 #[derive(Debug, Deserialize)]
