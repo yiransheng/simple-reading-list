@@ -24,6 +24,7 @@ use futures::{
 use horrorshow::Template;
 use serde_json::json;
 
+use common::config::CONFIG;
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
@@ -36,11 +37,10 @@ use common::utils::{admin_guard, create_token};
 embed_migrations!("migrations");
 
 fn create_pool() -> r2d2::Pool<ConnectionManager<PgConnection>> {
-    let database_url =
-        env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
     // create db connection pool
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    let manager =
+        ConnectionManager::<PgConnection>::new(CONFIG.database_url.clone());
+
     r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.")
@@ -254,7 +254,10 @@ fn main() {
                     .route(web::get().to_async(search_bookmark_html)),
             )
     })
-    .bind("0.0.0.0:8080")
+    .bind((
+        "0.0.0.0",
+        CONFIG.host_port.parse::<u16>().expect("Bad port"),
+    ))
     .unwrap()
     .start();
 
