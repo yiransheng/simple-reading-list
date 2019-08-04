@@ -15,6 +15,9 @@ impl Actor for DbExecutor {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct DoMigrations {}
+
+#[derive(Debug, Copy, Clone)]
 pub struct QueryRecent(pub i64);
 
 #[derive(Debug, Deserialize)]
@@ -73,7 +76,7 @@ impl Handler<AuthData> for DbExecutor {
             }
         }
         Err(ServiceError::BadRequest(
-            "Username and password don't match".into(),
+            "Username and Password don't match".into(),
         ))
     }
 }

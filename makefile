@@ -21,12 +21,12 @@ dev: $(OUT)/build-js $(OUT)/build-toshi-docker
 $(OUT):
 	mkdir -p $(OUT)
 
-$(OUT)/dummy_src: $(OUT) $(SERVER_SRC)
-	mkdir -p $(OUT)/dummy_src/bin
-	echo 'fn main() {}' | tee $$(find src/bin -name '*.rs' | sed 's/src/$(OUT)\/dummy_src/') 
-	echo 'pub fn noop() {}' > $(OUT)/dummy_src/lib.rs
+dummy_src: $(SERVER_SRC)
+	mkdir -p dummy_src/bin
+	echo 'fn main() {}' | tee $$(find src/bin -name '*.rs' | sed 's/src/dummy_src/') 
+	echo 'syntax error' > dummy_src/lib.rs
 
-$(OUT)/build-server-docker: $(OUT)/dummy_src $(SERVER_SRC)
+$(OUT)/build-server-docker: dummy_src $(SERVER_SRC)
 	( [[ -n $$(docker images -q $(SERVER_BIN):$(RELEASE)) ]] || \
 	  docker build -f docker/Dockerfile.server -t $(SERVER_BIN):$(RELEASE) . ) && \
 	docker tag $(SERVER_BIN):$(RELEASE) $(SERVER_BIN):latest && \

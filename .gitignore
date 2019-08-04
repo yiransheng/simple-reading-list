@@ -1,5 +1,6 @@
 /data
 /_out
+/dummy_src
 /target
 **/*.rs.bk
 
