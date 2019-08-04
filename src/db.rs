@@ -73,7 +73,7 @@ impl Handler<AuthData> for DbExecutor {
             }
         }
         Err(ServiceError::BadRequest(
-            "Username and Password don't match".into(),
+            "Username and password don't match".into(),
         ))
     }
 }

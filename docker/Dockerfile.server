@@ -8,11 +8,15 @@ RUN rustup target add x86_64-unknown-linux-musl
 
 COPY Cargo.toml Cargo.lock ./
 
-COPY ./src ./src
+COPY ./_out/dummy_src ./src
 
 RUN mkdir -p ./.cargo
 
 COPY conf/cargo_config ./.cargo/config
+
+RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl --all
+
+COPY ./src ./src
 
 RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl --all
 
