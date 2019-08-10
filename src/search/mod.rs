@@ -80,7 +80,7 @@ impl SearchClient {
         }
 
         eprintln!("Query: {}", q);
-        let q = QueryParser::new(q).parse().unwrap();
+        let q = QueryParser::new(q).parse();
         eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
             .post(&self.query_doc_endpoint)

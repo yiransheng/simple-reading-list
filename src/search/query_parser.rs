@@ -1,15 +1,5 @@
 use super::query::*;
-use crate::error::ServiceError;
 use logos::{Lexer, Logos};
-
-#[derive(Debug, Copy, Clone)]
-pub struct ParseError {}
-
-impl Into<ServiceError> for ParseError {
-    fn into(self) -> ServiceError {
-        ServiceError::BadRequest(String::new())
-    }
-}
 
 #[derive(Logos, Copy, Clone, Debug, PartialEq, Eq)]
 enum Token {
@@ -22,33 +12,31 @@ enum Token {
     #[token = "not:"]
     Inverse,
 
+    #[token = "tag:"]
+    Tag,
+
     #[token = "'"]
     QuoteSingle,
 
     #[token = "\""]
     QuoteDouble,
 
-    #[regex = r#"[^\s'"]+"#]
+    #[regex = r#"[^\s'":]+"#]
     Word,
 }
 
 pub struct QueryParser<'a> {
     lexer: Lexer<Token, &'a str>,
-    inverse: bool,
 }
 
 impl<'a> QueryParser<'a> {
     pub fn new(query_str: &'a str) -> Self {
-        eprintln!("Q: {}", query_str);
         Self {
             lexer: Token::lexer(query_str),
-            inverse: false,
         }
     }
-    pub fn parse(mut self) -> Result<Query, ParseError> {
-        let query_builder = self.do_parse(BoolQueryBuilder::new())?;
-
-        Ok(query_builder.build())
+    pub fn parse(mut self) -> Query {
+        self.parse_items(BoolQueryBuilder::new()).build()
     }
 }
 
@@ -59,66 +47,289 @@ enum OneOrMore<T> {
     More(Vec<T>),
 }
 
+// queries       = query +
+// query         = match | phrase | Inverse match | Inverse phrase
+// match         = Word | exact | (Tag ":" Word) | (Tag ":" exact)
+// exact         = <quote> Word <quote>
+// phrase        = <quote> Word {2,*} <quote>
 impl<'a> QueryParser<'a> {
-    fn do_parse(
+    fn parse_items(
         &mut self,
-        builder: BoolQueryBuilder,
-    ) -> Result<BoolQueryBuilder, ParseError> {
-        let mut query_builder = builder;
+        mut builder: BoolQueryBuilder,
+    ) -> BoolQueryBuilder {
         loop {
-            eprintln!(
-                "Next token: {:?}, {}",
-                self.lexer.token,
-                self.lexer.slice()
-            );
-            match self.lexer.token {
-                Token::Inverse => {
-                    self.inverse = true;
-                    self.lexer.advance();
+            let result = match self.lexer.token {
+                Token::End | Token::Error => return builder,
+                Token::Inverse => self.inverse_item(builder),
+                _ => self.regular_item(builder),
+            };
+            match result {
+                Ok(b) => {
+                    builder = b;
                 }
-                Token::Word => {
-                    let term = self.lexer.slice();
-                    let adder = if self.inverse {
-                        BoolQueryBuilder::must_not_one
-                    } else {
-                        BoolQueryBuilder::should_one
-                    };
-                    query_builder = adder(
-                        query_builder,
-                        FuzzyQueryBuilder::new()
-                            .with_field("title".to_owned())
-                            .with_term(term.to_owned())
-                            .build(),
-                    );
-                    query_builder = adder(
-                        query_builder,
-                        FuzzyQueryBuilder::new()
-                            .with_field("body".to_owned())
-                            .with_term(term.to_owned())
-                            .build(),
-                    );
-                    query_builder = adder(
-                        query_builder,
-                        ExactQueryBuilder::new()
-                            .with_field("tags".to_owned())
-                            .with_term(term.to_owned())
-                            .build(),
-                    );
-
-                    self.inverse = false;
-                    self.lexer.advance();
-                }
-                Token::QuoteSingle | Token::QuoteDouble => {
-                    query_builder = self.quote(query_builder)?;
-                }
-                Token::End => break,
-                Token::Error => return Err(ParseError {}),
+                Err(b) => return b,
             }
         }
-
-        Ok(query_builder)
     }
-    fn inside_quote(&mut self) -> Result<OneOrMore<&'a str>, ParseError> {
+
+    fn regular_item(
+        &mut self,
+        builder: BoolQueryBuilder,
+    ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
+        match self.lexer.token {
+            Token::Tag => self.tag_item(false, builder),
+            Token::Word | Token::QuoteSingle | Token::QuoteDouble => {
+                self.match_item(false, builder)
+            }
+            Token::End | Token::Error => Err(builder),
+            _ => {
+                self.lexer.advance();
+                Ok(builder)
+            }
+        }
+    }
+    fn inverse_item(
+        &mut self,
+        builder: BoolQueryBuilder,
+    ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
+        if let Err(_) = self.assert_token(Token::Inverse) {
+            return Err(builder);
+        }
+        match self.lexer.token {
+            Token::Tag => self.tag_item(true, builder),
+            Token::Word | Token::QuoteSingle | Token::QuoteDouble => {
+                self.match_item(true, builder)
+            }
+            Token::End => Ok(builder),
+            Token::Error => Err(builder),
+            _ => {
+                self.lexer.advance();
+                Ok(builder)
+            }
+        }
+    }
+    fn match_item(
+        &mut self,
+        inverse: bool,
+        mut builder: BoolQueryBuilder,
+    ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
+        match self.lexer.token {
+            Token::Word => {
+                if inverse {
+                    builder = builder
+                        .must_not(
+                            ExactQueryBuilder::new()
+                                .with_field("body".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        )
+                        .must_not(
+                            ExactQueryBuilder::new()
+                                .with_field("title".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        )
+                        .must_not(
+                            ExactQueryBuilder::new()
+                                .with_field("tag".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        );
+                } else {
+                    builder = builder
+                        .should(
+                            FuzzyQueryBuilder::new()
+                                .with_field("title".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        )
+                        .should(
+                            FuzzyQueryBuilder::new()
+                                .with_field("body".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        )
+                        .should(
+                            ExactQueryBuilder::new()
+                                .with_field("tag".to_owned())
+                                .with_term(self.lexer.slice().to_owned())
+                                .build(),
+                        )
+                }
+                self.lexer.advance();
+            }
+            Token::QuoteSingle | Token::QuoteDouble => {
+                let quote_token = self.lexer.token;
+                self.lexer.advance();
+                let terms = match self.inside_quote(quote_token) {
+                    Ok(terms) => terms,
+                    Err(_) => return Err(builder),
+                };
+                match terms {
+                    OneOrMore::One(term) => {
+                        if inverse {
+                            builder = builder
+                                .must_not(
+                                    ExactQueryBuilder::new()
+                                        .with_field("body".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                                .must_not(
+                                    ExactQueryBuilder::new()
+                                        .with_field("title".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                                .must_not(
+                                    ExactQueryBuilder::new()
+                                        .with_field("tag".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                        } else {
+                            builder = builder
+                                .should(
+                                    ExactQueryBuilder::new()
+                                        .with_field("body".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                                .should(
+                                    ExactQueryBuilder::new()
+                                        .with_field("title".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                                .should(
+                                    ExactQueryBuilder::new()
+                                        .with_field("tag".to_owned())
+                                        .with_term(term.to_string())
+                                        .build(),
+                                )
+                        }
+                    }
+                    OneOrMore::More(ref terms) => {
+                        if inverse {
+                            builder = builder
+                                .must_not(
+                                    PhraseQueryBuilder::new()
+                                        .with_field("title".to_owned())
+                                        .with_terms(
+                                            terms
+                                                .into_iter()
+                                                .map(|t| t.to_string()),
+                                        )
+                                        .build(),
+                                )
+                                .must_not(
+                                    PhraseQueryBuilder::new()
+                                        .with_field("body".to_owned())
+                                        .with_terms(
+                                            terms
+                                                .into_iter()
+                                                .map(|t| t.to_string()),
+                                        )
+                                        .build(),
+                                );
+                        } else {
+                            builder = builder
+                                .should(
+                                    PhraseQueryBuilder::new()
+                                        .with_field("title".to_owned())
+                                        .with_terms(
+                                            terms
+                                                .into_iter()
+                                                .map(|t| t.to_string()),
+                                        )
+                                        .build(),
+                                )
+                                .should(
+                                    PhraseQueryBuilder::new()
+                                        .with_field("body".to_owned())
+                                        .with_terms(
+                                            terms
+                                                .into_iter()
+                                                .map(|t| t.to_string()),
+                                        )
+                                        .build(),
+                                );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => return Err(builder),
+        }
+
+        Ok(builder)
+    }
+    fn tag_item(
+        &mut self,
+        inverse: bool,
+        mut builder: BoolQueryBuilder,
+    ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
+        if let Err(_) = self.assert_token(Token::Tag) {
+            return Err(builder);
+        }
+
+        match self.lexer.token {
+            Token::Word => {
+                if inverse {
+                    builder = builder.must_not(
+                        ExactQueryBuilder::new()
+                            .with_field("tag".to_owned())
+                            .with_term(self.lexer.slice().to_owned())
+                            .build(),
+                    )
+                } else {
+                    builder = builder.must(
+                        ExactQueryBuilder::new()
+                            .with_field("tag".to_owned())
+                            .with_term(self.lexer.slice().to_owned())
+                            .build(),
+                    );
+                }
+                self.lexer.advance();
+            }
+            Token::QuoteSingle | Token::QuoteDouble => {
+                let quote_token = self.lexer.token;
+                self.lexer.advance();
+                let terms = match self.inside_quote(quote_token) {
+                    Ok(terms) => terms,
+                    Err(_) => return Err(builder),
+                };
+                match terms {
+                    OneOrMore::One(term) => {
+                        if inverse {
+                            builder = builder.must_not(
+                                ExactQueryBuilder::new()
+                                    .with_field("tag".to_owned())
+                                    .with_term(term.to_string())
+                                    .build(),
+                            )
+                        } else {
+                            builder = builder.must(
+                                ExactQueryBuilder::new()
+                                    .with_field("tag".to_owned())
+                                    .with_term(term.to_string())
+                                    .build(),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => return Err(builder),
+        }
+
+        Ok(builder)
+    }
+
+    fn inside_quote(
+        &mut self,
+        quote_token: Token,
+    ) -> Result<OneOrMore<&'a str>, ()> {
         let mut terms: Vec<_> = vec![];
         loop {
             match self.lexer.token {
@@ -126,12 +337,20 @@ impl<'a> QueryParser<'a> {
                     terms.push("not:");
                     self.lexer.advance();
                 }
+                Token::Tag => {
+                    terms.push("tag:");
+                    self.lexer.advance();
+                }
                 Token::Word => {
                     terms.push(self.lexer.slice());
                     self.lexer.advance();
                 }
-                Token::End | Token::QuoteSingle | Token::QuoteDouble => break,
-                Token::Error => return Err(ParseError {}),
+                Token::QuoteDouble | Token::QuoteSingle => {
+                    self.assert_token(quote_token)?;
+                    break;
+                }
+                Token::End => break,
+                Token::Error => return Err(()),
             }
         }
 
@@ -143,60 +362,13 @@ impl<'a> QueryParser<'a> {
             Ok(OneOrMore::More(terms))
         }
     }
-    fn quote(
-        &mut self,
-        builder: BoolQueryBuilder,
-    ) -> Result<BoolQueryBuilder, ParseError> {
-        let mut query_builder = builder;
-        let quote = self.lexer.token;
-        self.lexer.advance();
 
-        let terms = self.inside_quote()?;
-        self.assert_token(quote)
-            .or_else(|_| self.assert_token(Token::End))?;
-
-        let fields = ["tags", "title", "body"];
-        match terms {
-            OneOrMore::Empty => {}
-            OneOrMore::One(term) => {
-                let queries = (&fields[..]).into_iter().map(|field| {
-                    ExactQueryBuilder::new()
-                        .with_field(field.to_string())
-                        .with_term(term.to_owned())
-                        .build()
-                });
-                if self.inverse {
-                    query_builder = query_builder.must_not(queries);
-                    self.inverse = false;
-                } else {
-                    query_builder = query_builder.should(queries);
-                }
-            }
-            OneOrMore::More(ref terms) => {
-                let queries = (&fields[..]).into_iter().map(|field| {
-                    PhraseQueryBuilder::new()
-                        .with_field(field.to_string())
-                        .with_terms(terms.iter().map(|term| term.to_string()))
-                        .build()
-                });
-                if self.inverse {
-                    query_builder = query_builder.must_not(queries);
-                    self.inverse = false;
-                } else {
-                    query_builder = query_builder.should(queries);
-                }
-            }
-        }
-
-        Ok(query_builder)
-    }
-
-    fn assert_token(&mut self, token: Token) -> Result<(), ParseError> {
+    fn assert_token(&mut self, token: Token) -> Result<(), ()> {
         if token == self.lexer.token {
             self.lexer.advance();
             Ok(())
         } else {
-            Err(ParseError {})
+            Err(())
         }
     }
 }
