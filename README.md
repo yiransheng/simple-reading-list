@@ -22,8 +22,16 @@ A very simple reading list/bookmark app.
 * [Caddy](https://caddy.community)
 
 
+### Setup Database (one time)
 
-Run server in dev mode, toshi inside docker and admin-ui with `yarn start`
+```
+sudo -u postgres psql
+postgres=# create database insightful;
+postgres=# create user readsdev with encrypted password 'thepass';
+postgres=# grant all privileges on insightful to readsdev;
+```
+
+Run server in dev mode, toshi inside docker and admin-ui with `yarn start`.
 
 ```
 make dev
