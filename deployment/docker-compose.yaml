@@ -11,6 +11,7 @@ services:
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
       TOSHI_URL: "${TOSHI_URL}"
+      RUST_LOG: "${RUST_LOG}"
     depends_on:
       - db
       - toshi

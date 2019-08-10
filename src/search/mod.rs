@@ -91,6 +91,7 @@ impl SearchClient {
                 // toshi response does not have correct Content-Type header
                 // so cannot use .json() here
                 resp.body().from_err().and_then(|body| {
+                    log::info!("Toshi response: {:?}", &body);
                     serde_json::from_slice(&body).map_err(Error::from)
                 })
             })

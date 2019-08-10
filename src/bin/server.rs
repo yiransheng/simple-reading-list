@@ -122,6 +122,7 @@ fn search_bookmark_html(
             }
             Either::A(search_client.query_docs(query).and_then(
                 move |bookmarks| {
+                    info!("Search complete, found {} items.", bookmarks.hits);
                     let items = bookmarks
                         .docs
                         .into_iter()
