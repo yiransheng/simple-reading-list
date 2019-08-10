@@ -1,17 +1,13 @@
-use std::env;
-
 #[macro_use]
 extern crate diesel_migrations;
 
 use actix::prelude::*;
 use actix_web::{
-    body::Body,
     error::ResponseError,
     guard,
     http::{self, header},
-    middleware,
     middleware::cors,
-    web, App, Error, HttpRequest, HttpResponse, HttpServer,
+    web, App, Error, HttpResponse, HttpServer,
 };
 use diesel::prelude::*;
 use diesel::{r2d2::ConnectionManager, PgConnection};
@@ -22,6 +18,7 @@ use futures::{
     Future,
 };
 use horrorshow::Template;
+use log::*;
 use serde_json::json;
 
 use common::config::CONFIG;
@@ -29,9 +26,7 @@ use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
 use common::search::{QueryParser, Search, SearchClient};
-use common::templates::{
-    bookmark_jsonml, BookmarkItem, IntoBookmark, PageTemplate,
-};
+use common::templates::{bookmark_jsonml, BookmarkItem, PageTemplate};
 use common::utils::{admin_guard, create_token};
 
 embed_migrations!("migrations");
@@ -111,6 +106,7 @@ fn search_bookmark_html(
     #[inline(always)]
     fn redirect_empty_search() -> impl Future<Item = HttpResponse, Error = Error>
     {
+        info!("Empty search query, redirect to home");
         ok(HttpResponse::Found()
             .header(http::header::LOCATION, "/")
             .finish()
@@ -118,6 +114,7 @@ fn search_bookmark_html(
     }
     match search {
         Some(ref search) if !search.q.is_empty() => {
+            info!("Search query: {}", &search.q);
             let query_string = search.q.clone();
             let query = QueryParser::new(&search.q).parse();
             if query.is_empty() {
@@ -154,7 +151,7 @@ fn create_bookmark(
         .and_then::<_, Box<Future<Item = Result<Bookmark, _>, Error = Error>>>(
             move |created| match created {
                 Ok(created) => {
-                    eprintln!("DB ok");
+                    info!("Created database record for: {:?}", &created);
                     let doc: BookmarkDoc = created.clone().into();
                     let created2 = created.clone();
                     Box::new(
@@ -199,6 +196,7 @@ fn whoami(user: Result<SlimUser, ServiceError>) -> Result<HttpResponse, Error> {
 }
 
 fn db_migrations(pool: &r2d2::Pool<ConnectionManager<PgConnection>>) {
+    info!("Handling database migrations...");
     let conn: &PgConnection = &pool.get().unwrap();
     embedded_migrations::run_with_output(conn, &mut std::io::stdout())
         .expect("Failed to run migrations");
@@ -206,6 +204,7 @@ fn db_migrations(pool: &r2d2::Pool<ConnectionManager<PgConnection>>) {
 
 fn main() {
     dotenv().ok();
+    env_logger::init();
 
     let sys = actix_rt::System::new("bookmarks");
     let pool = create_pool();
@@ -215,6 +214,7 @@ fn main() {
     // Start 4 parallel db executors
     let addr: Addr<DbExecutor> =
         SyncArbiter::start(4, move || DbExecutor(pool.clone()));
+    let host_port = CONFIG.host_port.parse::<u16>().unwrap_or(8080);
     // Start http server
     HttpServer::new(move || {
         App::new()
@@ -263,13 +263,10 @@ fn main() {
                     .route(web::get().to_async(search_bookmark_html)),
             )
     })
-    .bind((
-        "0.0.0.0",
-        CONFIG.host_port.parse::<u16>().expect("Bad port"),
-    ))
+    .bind(("0.0.0.0", host_port))
     .unwrap()
     .start();
 
-    println!("Started http server: 0.0.0.0:8080");
+    info!("Started http server: 0.0.0.0:{}", host_port);
     let _ = sys.run();
 }

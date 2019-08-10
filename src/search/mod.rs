@@ -61,7 +61,6 @@ impl SearchClient {
             .send_json(&InsertPayload::new(doc))
             .from_err()
             .map(|resp| {
-                eprintln!("Insert: {:?}", resp);
                 if resp.status() == StatusCode::CREATED {
                     Ok(())
                 } else {
@@ -80,7 +79,6 @@ impl SearchClient {
             limit: u32,
         }
 
-        eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
             .post(&self.query_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
@@ -90,7 +88,6 @@ impl SearchClient {
             })
             .from_err()
             .and_then(|mut resp| {
-                eprintln!("Results: {:?}", resp);
                 // toshi response does not have correct Content-Type header
                 // so cannot use .json() here
                 resp.body().from_err().and_then(|body| {

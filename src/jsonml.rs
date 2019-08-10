@@ -436,7 +436,6 @@ mod tests {
             ],
         );
         let serialized = serde_json::to_string_pretty(&el).unwrap();
-        // eprintln!("{}", serialized);
         let js_value: serde_json::Value =
             serde_json::from_str(&serialized).unwrap();
 

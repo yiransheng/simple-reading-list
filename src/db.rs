@@ -3,6 +3,7 @@ use bcrypt::verify;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use log::*;
 use serde_derive::*;
 
 use crate::error::ServiceError;
@@ -96,7 +97,7 @@ impl Handler<NewBookmark> for DbExecutor {
             .values(&msg)
             .get_results(conn)
             .map_err(|err| {
-                eprintln!("{:?}", err);
+                error!("Create bookmark error: {:?}", err);
                 err
             })?;
 
