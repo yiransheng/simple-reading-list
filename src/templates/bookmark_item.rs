@@ -15,7 +15,7 @@ impl IntoBookmark for Bookmark {
 }
 impl IntoBookmark for BookmarkDoc {
     fn into_bookmark(self) -> Bookmark {
-        self.to_bookmark_lossy()
+        self.into_bookmark_lossy()
     }
 }
 

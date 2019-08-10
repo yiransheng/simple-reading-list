@@ -1,5 +1,3 @@
-use std::io;
-
 use horrorshow::helper::doctype;
 use horrorshow::{html, Raw, RenderOnce, TemplateBuffer};
 
@@ -94,7 +92,7 @@ where
     }
 }
 
-const ICON: &'static str = {
+const ICON: &str = {
     r#"
     <svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" style="display: none;">
        <defs>

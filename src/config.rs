@@ -32,8 +32,8 @@ impl Config {
     fn from_env(variable: &str) -> String {
         std::env::var(variable)
             .ok()
-            .filter(|s| s.len() > 0)
-            .expect(&format!("{} must be set", variable))
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| panic!("{} must be set", variable))
     }
     fn from_env_or_else<R, F>(variable: &str, f: F) -> R
     where
@@ -42,7 +42,7 @@ impl Config {
     {
         std::env::var(variable)
             .ok()
-            .filter(|s| s.len() > 0)
+            .filter(|s| !s.is_empty())
             .map(Into::into)
             .unwrap_or_else(f)
     }

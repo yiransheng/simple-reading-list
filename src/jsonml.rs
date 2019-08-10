@@ -142,7 +142,7 @@ where
         let mut i = 0;
         while let Some(el) = self.maybe_element()? {
             elements.push(el);
-            i = i + 1;
+            i += 1;
             // just in case
             if i > 10000 {
                 panic!("Possible infinite loop! (MDParser)");
@@ -235,9 +235,8 @@ where
         dest: CowStr<'a>,
         _title: CowStr<'a>,
     ) -> IResult<Element<'a>> {
-        match ty {
-            LinkType::Email => return Err(ParseError::NotSupported("mailto")),
-            _ => {}
+        if let LinkType::Email = ty {
+            return Err(ParseError::NotSupported("mailto"));
         }
 
         let attrs = Attrs {
@@ -258,9 +257,8 @@ where
         dest: CowStr<'a>,
         title: CowStr<'a>,
     ) -> IResult<Element<'a>> {
-        match ty {
-            LinkType::Email => return Err(ParseError::NotSupported("mailto")),
-            _ => {}
+        if let LinkType::Email = ty {
+            return Err(ParseError::NotSupported("mailto"));
         }
 
         let attrs = Attrs {
@@ -436,7 +434,6 @@ mod tests {
             ],
         );
         let serialized = serde_json::to_string_pretty(&el).unwrap();
-        // eprintln!("{}", serialized);
         let js_value: serde_json::Value =
             serde_json::from_str(&serialized).unwrap();
 

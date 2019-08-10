@@ -79,7 +79,7 @@ pub fn decode_token(token: &str) -> Result<SlimUser, ServiceError> {
 }
 
 fn extract_bearer_creds(token: &str) -> Result<&str, ServiceError> {
-    const PREFIX: &'static str = "Bearer ";
+    const PREFIX: &str = "Bearer ";
     const PREFIX_LEN: usize = 7; // prefix.len() -- not stable yet
 
     if token.starts_with(PREFIX) {

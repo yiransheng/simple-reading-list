@@ -11,7 +11,6 @@ services:
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
       TOSHI_URL: "${TOSHI_URL}"
-      JWT_SECRET: "${JWT_SECRET}"
     depends_on:
       - db
       - toshi

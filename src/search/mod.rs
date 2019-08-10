@@ -8,7 +8,8 @@ mod index;
 mod query;
 mod query_parser;
 
-use self::query_parser::QueryParser;
+pub use self::query::Query;
+pub use self::query_parser::QueryParser;
 use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::{BookmarkDoc, SearchResults};
@@ -60,7 +61,6 @@ impl SearchClient {
             .send_json(&InsertPayload::new(doc))
             .from_err()
             .map(|resp| {
-                eprintln!("Insert: {:?}", resp);
                 if resp.status() == StatusCode::CREATED {
                     Ok(())
                 } else {
@@ -71,7 +71,7 @@ impl SearchClient {
 
     pub fn query_docs(
         &self,
-        q: &str,
+        q: Query,
     ) -> impl Future<Item = SearchResults, Error = Error> {
         #[derive(Serialize)]
         struct QueryPayload<Q> {
@@ -79,9 +79,6 @@ impl SearchClient {
             limit: u32,
         }
 
-        eprintln!("Query: {}", q);
-        let q = QueryParser::new(q).parse().unwrap();
-        eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
             .post(&self.query_doc_endpoint)
             .header(CONTENT_TYPE, "application/json")
@@ -91,7 +88,6 @@ impl SearchClient {
             })
             .from_err()
             .and_then(|mut resp| {
-                eprintln!("Results: {:?}", resp);
                 // toshi response does not have correct Content-Type header
                 // so cannot use .json() here
                 resp.body().from_err().and_then(|body| {
@@ -105,7 +101,6 @@ fn insert_doc_endpoint(toshi_host: &str) -> uri::Uri {
     uri::Builder::new()
         .scheme("http")
         .authority(toshi_host)
-        // LOCAL Toshi workaround:...
         .path_and_query("/bookmarks")
         .build()
         .expect("Invalid endpoint")

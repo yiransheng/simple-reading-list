@@ -118,7 +118,7 @@ impl From<Bookmark> for BookmarkDoc {
 }
 
 impl BookmarkDoc {
-    pub fn to_bookmark_lossy(self) -> Bookmark {
+    pub fn into_bookmark_lossy(self) -> Bookmark {
         let BookmarkDoc {
             id,
             created,
@@ -294,7 +294,7 @@ impl<'de> Deserialize<'de> for BookmarkDoc {
             }
         }
 
-        const FIELDS: &'static [&'static str] =
+        const FIELDS: &[&str] =
             &["id", "created", "title", "url", "body", "tags"];
 
         deserializer.deserialize_struct(
@@ -348,7 +348,7 @@ fn seek_json_start(bytes: &[u8]) -> Option<&[u8]> {
 impl ToSql<Jsonb, Pg> for TagSet {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         // prefix jsonb version num.
-        out.write(&[1])?;
+        out.write_all(&[1])?;
         serde_json::to_writer(out, self)
             .map(|_| IsNull::No)
             .map_err(Into::into)
@@ -434,7 +434,7 @@ mod tests {
         assert!(bookmark_doc.is_ok());
         assert_eq!(
             bookmark.unwrap(),
-            bookmark_doc.unwrap().to_bookmark_lossy()
+            bookmark_doc.unwrap().into_bookmark_lossy()
         );
     }
 }

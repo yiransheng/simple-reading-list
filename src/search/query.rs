@@ -1,5 +1,5 @@
 use serde::ser::{SerializeMap, Serializer};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
@@ -8,6 +8,16 @@ pub enum Query {
     Exact(ExactTerm),
     Fuzzy(FuzzyQuery),
     Phrase(PhraseQuery),
+}
+impl Query {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Query::Boolean { bool: b } => b.is_empty(),
+            _ => unreachable!(
+                "Expect this check to only be called on Bool query"
+            ),
+        }
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
@@ -31,6 +41,14 @@ pub struct BoolQuery {
     should: Vec<Query>,
     minimum_should_match: Option<u64>,
     boost: Option<f64>,
+}
+
+impl BoolQuery {
+    pub fn is_empty(&self) -> bool {
+        self.must.is_empty()
+            && self.must_not.is_empty()
+            && self.should.is_empty()
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
@@ -142,11 +160,8 @@ impl BoolQueryBuilder {
         self.__must_not.push(q);
         self
     }
-    pub fn should<I>(mut self, q: I) -> Self
-    where
-        I: IntoIterator<Item = Query>,
-    {
-        self.__should.extend(q.into_iter());
+    pub fn should(mut self, q: Query) -> Self {
+        self.__should.push(q);
         self
     }
     pub fn minimum_should_match(mut self, s: u64) -> Self {
