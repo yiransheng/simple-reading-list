@@ -64,13 +64,8 @@ impl Handler<AuthData> for DbExecutor {
             users.filter(email.eq(&msg.email)).load::<User>(conn)?;
 
         if let Some(user) = items.pop() {
-            match verify(&msg.password, &user.password) {
-                Ok(matching) => {
-                    if matching {
-                        return Ok(user.into());
-                    }
-                }
-                Err(_) => (),
+            if let Ok(true) = verify(&msg.password, &user.password) {
+                return Ok(user.into());
             }
         }
         Err(ServiceError::BadRequest(

@@ -94,7 +94,7 @@ impl<'a> QueryParser<'a> {
         &mut self,
         builder: BoolQueryBuilder,
     ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
-        if let Err(_) = self.assert_token(Token::Inverse) {
+        if self.assert_token(Token::Inverse).is_err() {
             return Err(builder);
         }
         match self.lexer.token {
@@ -271,7 +271,7 @@ impl<'a> QueryParser<'a> {
         inverse: bool,
         mut builder: BoolQueryBuilder,
     ) -> Result<BoolQueryBuilder, BoolQueryBuilder> {
-        if let Err(_) = self.assert_token(Token::Tag) {
+        if self.assert_token(Token::Tag).is_err() {
             return Err(builder);
         }
 
