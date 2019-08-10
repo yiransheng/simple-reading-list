@@ -56,7 +56,7 @@ pub struct PageData<T> {
     pub next_page: Option<i64>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SearchResults {
     pub hits: u32,
     pub docs: Vec<ScoredDoc>,
