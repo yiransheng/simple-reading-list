@@ -12,6 +12,8 @@ ADMIN_SRC := $(shell find admin-ui/src -name '*')
 docker: $(OUT)/build-toshi-docker $(OUT)/build-server-docker $(OUT)/build-caddy-docker
 
 dev: $(OUT)/build-js $(OUT)/build-toshi-docker
+	cargo run --bin create-admin-user -- -u admin -p password & \
+	cargo run --bin create-toshi-index -- conf/toshi_index.json & \
 	cargo run --bin server & \
 	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data --name=toshi \
 	  $$(cat $(OUT)/build-toshi-docker) & \

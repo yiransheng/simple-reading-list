@@ -10,6 +10,7 @@ use actix_web::error::ResponseError;
 use actix_web::http::header::CONTENT_TYPE;
 use actix_web::http::StatusCode;
 use derive_more::*;
+use dotenv::dotenv;
 use futures::future::{lazy, Future};
 use structopt::StructOpt;
 
@@ -100,6 +101,8 @@ fn create_index(
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    dotenv().ok();
+
     let opt = Opt::from_args();
     let payload = get_toshi_index(&opt)?;
     let host: Cow<String> = std::env::var("TOSHI_URL")
