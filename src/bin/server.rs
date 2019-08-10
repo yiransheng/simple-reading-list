@@ -159,7 +159,10 @@ fn create_bookmark(
                         search_client
                             .insert_doc(doc)
                             .map(|_| Ok(created))
-                            .or_else(|_| future::ok(Ok(created2))),
+                            .or_else(|err| {
+                                error!("Failed to index doc: {:?}", err);
+                                future::ok(Ok(created2))
+                            }),
                     )
                 }
                 Err(_) => {
