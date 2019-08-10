@@ -133,7 +133,7 @@ impl<'a> QueryParser<'a> {
                         )
                         .must_not(
                             ExactQueryBuilder::new()
-                                .with_field("tag".to_owned())
+                                .with_field("tags".to_owned())
                                 .with_term(self.lexer.slice().to_owned())
                                 .build(),
                         );
@@ -153,7 +153,7 @@ impl<'a> QueryParser<'a> {
                         )
                         .should(
                             ExactQueryBuilder::new()
-                                .with_field("tag".to_owned())
+                                .with_field("tags".to_owned())
                                 .with_term(self.lexer.slice().to_owned())
                                 .build(),
                         )
@@ -185,7 +185,7 @@ impl<'a> QueryParser<'a> {
                                 )
                                 .must_not(
                                     ExactQueryBuilder::new()
-                                        .with_field("tag".to_owned())
+                                        .with_field("tags".to_owned())
                                         .with_term(term.to_string())
                                         .build(),
                                 )
@@ -205,7 +205,7 @@ impl<'a> QueryParser<'a> {
                                 )
                                 .should(
                                     ExactQueryBuilder::new()
-                                        .with_field("tag".to_owned())
+                                        .with_field("tags".to_owned())
                                         .with_term(term.to_string())
                                         .build(),
                                 )
@@ -280,14 +280,14 @@ impl<'a> QueryParser<'a> {
                 if inverse {
                     builder = builder.must_not(
                         ExactQueryBuilder::new()
-                            .with_field("tag".to_owned())
+                            .with_field("tags".to_owned())
                             .with_term(self.lexer.slice().to_owned())
                             .build(),
                     )
                 } else {
                     builder = builder.must(
                         ExactQueryBuilder::new()
-                            .with_field("tag".to_owned())
+                            .with_field("tags".to_owned())
                             .with_term(self.lexer.slice().to_owned())
                             .build(),
                     );
@@ -306,14 +306,14 @@ impl<'a> QueryParser<'a> {
                         if inverse {
                             builder = builder.must_not(
                                 ExactQueryBuilder::new()
-                                    .with_field("tag".to_owned())
+                                    .with_field("tags".to_owned())
                                     .with_term(term.to_string())
                                     .build(),
                             )
                         } else {
                             builder = builder.must(
                                 ExactQueryBuilder::new()
-                                    .with_field("tag".to_owned())
+                                    .with_field("tags".to_owned())
                                     .with_term(term.to_string())
                                     .build(),
                             );
@@ -415,7 +415,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "hello"
+                      "tags": "hello"
                     }
                   }
                 ],
@@ -463,7 +463,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "hello"
+                      "tags": "hello"
                     }
                   },
                   {
@@ -486,7 +486,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "world"
+                      "tags": "world"
                     }
                   },
                   {
@@ -509,7 +509,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "nice"
+                      "tags": "nice"
                     }
                   }
                 ],
@@ -582,14 +582,14 @@ mod tests {
                 "must": [
                   {
                     "term": {
-                      "tag": "github.com"
+                      "tags": "github.com"
                     }
                   }
                 ],
                 "must_not": [
                   {
                     "term": {
-                      "tag": "google.com"
+                      "tags": "google.com"
                     }
                   }
                 ],
@@ -638,7 +638,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "inf"
+                      "tags": "inf"
                     }
                   }
                 ],
@@ -666,7 +666,7 @@ mod tests {
                 "must": [
                   {
                     "term": {
-                      "tag": "foo"
+                      "tags": "foo"
                     }
                   }
                 ],
@@ -717,7 +717,7 @@ mod tests {
                   },
                   {
                     "term": {
-                      "tag": "why"
+                      "tags": "why"
                     }
                   }
                 ],

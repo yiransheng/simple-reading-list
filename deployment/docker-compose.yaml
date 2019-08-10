@@ -11,16 +11,8 @@ services:
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
       TOSHI_URL: "${TOSHI_URL}"
+      TOSHI_INDEX: "${TOSHI_INDEX}"
       RUST_LOG: "${RUST_LOG}"
-    depends_on:
-      - db
-      - toshi
-      - create_admin_user
-  create_admin_user:
-    image: "reads.yiransheng.com/server:latest"
-    command: sh -c '/create-admin-user -u ${ADMIN_USER} -p ${ADMIN_PASSWORD}'
-    environment:
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
     depends_on:
       - db
       - toshi

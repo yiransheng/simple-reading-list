@@ -27,11 +27,16 @@ pub struct SearchClient {
 
 impl SearchClient {
     pub fn new() -> Self {
-        SearchClient {
+        let client = SearchClient {
             rest_client: Client::default(),
             insert_doc_endpoint: insert_doc_endpoint(),
             query_doc_endpoint: query_doc_endpoint(),
-        }
+        };
+        log::info!("Created toshi client");
+        log::info!("  toshi: {}", client.insert_doc_endpoint);
+        log::info!("  toshi: {}", client.query_doc_endpoint);
+
+        client
     }
 
     pub fn insert_doc(

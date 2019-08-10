@@ -60,7 +60,11 @@ fn create_admin_user<'a>(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut opt = AdminOpt::from_args();
+    assert!(!opt.user.is_empty());
+    assert!(!opt.password.is_empty());
+
     let user = NewUser::try_from(&mut opt)?;
+
     let conn = establish_connection();
 
     create_admin_user(&conn, user)?;
