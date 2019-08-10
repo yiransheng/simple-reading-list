@@ -19,6 +19,7 @@ RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-li
 
 COPY ./src ./src
 COPY ./migrations ./migrations
+COPY ./conf/toshi_config.toml ./toshi_config.toml
 
 RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl --all
 
