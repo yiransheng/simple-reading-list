@@ -35,4 +35,7 @@ RUN apk add --no-cache libpq
 
 COPY --from=build /build-out/* /
 
-CMD /server
+COPY ./conf/toshi_index.json ./bookmarks.json
+COPY ./docker/run_server.sh ./run_server.sh
+
+CMD sh run_server.sh
