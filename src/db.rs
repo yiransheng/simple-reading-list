@@ -6,6 +6,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use log::*;
 use serde_derive::*;
 
+use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::{Bookmark, NewBookmark, PageData, SlimUser, User};
 
@@ -17,6 +18,20 @@ impl Actor for DbExecutor {
 
 #[derive(Debug, Copy, Clone)]
 pub struct QueryRecent(pub i64);
+
+#[derive(Debug, Copy, Clone)]
+pub struct BookmarkIndexed {
+    id: i32,
+}
+impl BookmarkIndexed {
+    pub fn new(id: i32) -> Self {
+        Self { id }
+    }
+}
+
+impl Message for BookmarkIndexed {
+    type Result = Result<Bookmark, diesel::result::Error>;
+}
 
 #[derive(Debug, Deserialize)]
 pub struct AuthData {
@@ -46,6 +61,25 @@ impl Handler<QueryRecent> for DbExecutor {
             .paginate(msg.0)
             .per_page(20)
             .load_and_count_pages::<Bookmark>(conn)
+            .map_err(Into::into)
+    }
+}
+
+impl Handler<BookmarkIndexed> for DbExecutor {
+    type Result = Result<Bookmark, diesel::result::Error>;
+
+    fn handle(
+        &mut self,
+        msg: BookmarkIndexed,
+        _: &mut Self::Context,
+    ) -> Self::Result {
+        use crate::schema::bookmarks::dsl::*;
+
+        let conn: &PgConnection = &self.0.get().unwrap();
+
+        diesel::update(bookmarks.find(msg.id))
+            .set(toshi_index.eq(&CONFIG.toshi_index))
+            .get_result::<Bookmark>(conn)
             .map_err(Into::into)
     }
 }

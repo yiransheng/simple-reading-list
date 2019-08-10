@@ -22,7 +22,7 @@ use log::*;
 use serde_json::json;
 
 use common::config::CONFIG;
-use common::db::{AuthData, DbExecutor, QueryRecent};
+use common::db::{AuthData, BookmarkIndexed, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
 use common::search::{QueryParser, Search, SearchClient};
@@ -153,15 +153,31 @@ fn create_bookmark(
             move |created| match created {
                 Ok(created) => {
                     info!("Created database record for: {:?}", &created);
+                    let bookmark_id = created.id;
                     let doc: BookmarkDoc = created.clone().into();
-                    let created2 = created.clone();
                     Box::new(
                         search_client
                             .insert_doc(doc)
-                            .map(|_| Ok(created))
+                            .and_then(move |_| {
+                                info!(
+                                    "Bookmark(id={}) indexed, updating db...",
+                                    bookmark_id,
+                                );
+                                db.send(BookmarkIndexed::new(bookmark_id))
+                                    .from_err()
+                            })
+                            .map(|bm| {
+                                if let Ok(ref bm) = bm {
+                                    info!(
+                                        "Bookmark(id={}) updated: {:?}",
+                                        bm.id, bm
+                                    );
+                                }
+                                bm.map_err(Into::into)
+                            })
                             .or_else(|err| {
                                 error!("Failed to index doc: {:?}", err);
-                                future::ok(Ok(created2))
+                                future::ok(Ok(created))
                             }),
                     )
                 }

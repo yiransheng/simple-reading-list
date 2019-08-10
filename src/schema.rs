@@ -6,6 +6,7 @@ table! {
         url -> Varchar,
         body -> Text,
         tags -> Jsonb,
+        toshi_index -> Nullable<Text>,
     }
 }
 
