@@ -1,5 +1,7 @@
-use super::query::*;
 use logos::{Lexer, Logos};
+
+use super::query::*;
+use crate::macros::*;
 
 #[derive(Logos, Copy, Clone, Debug, PartialEq, Eq)]
 enum Token {
@@ -57,7 +59,7 @@ impl<'a> QueryParser<'a> {
         &mut self,
         mut builder: BoolQueryBuilder,
     ) -> BoolQueryBuilder {
-        loop {
+        loop_panic_when_stuck!({
             let result = match self.lexer.token {
                 Token::End | Token::Error => return builder,
                 Token::Inverse => self.inverse_item(builder),
@@ -69,7 +71,7 @@ impl<'a> QueryParser<'a> {
                 }
                 Err(b) => return b,
             }
-        }
+        })
     }
 
     fn regular_item(
@@ -331,7 +333,7 @@ impl<'a> QueryParser<'a> {
         quote_token: Token,
     ) -> Result<OneOrMore<&'a str>, ()> {
         let mut terms: Vec<_> = vec![];
-        loop {
+        loop_panic_when_stuck!({
             match self.lexer.token {
                 Token::Inverse => {
                     terms.push("not:");
@@ -352,7 +354,7 @@ impl<'a> QueryParser<'a> {
                 Token::End => break,
                 Token::Error => return Err(()),
             }
-        }
+        });
 
         if terms.is_empty() {
             Ok(OneOrMore::Empty)

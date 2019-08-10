@@ -101,7 +101,6 @@ fn insert_doc_endpoint(toshi_host: &str) -> uri::Uri {
     uri::Builder::new()
         .scheme("http")
         .authority(toshi_host)
-        // LOCAL Toshi workaround:...
         .path_and_query("/bookmarks")
         .build()
         .expect("Invalid endpoint")
