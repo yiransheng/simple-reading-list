@@ -138,7 +138,14 @@ impl BoolQueryBuilder {
         self.__must.push(q);
         self
     }
-    pub fn must_not(mut self, q: Query) -> Self {
+    pub fn must_not<I>(mut self, q: I) -> Self
+    where
+        I: IntoIterator<Item = Query>,
+    {
+        self.__must_not.extend(q.into_iter());
+        self
+    }
+    pub fn must_not_one(mut self, q: Query) -> Self {
         self.__must_not.push(q);
         self
     }
@@ -147,6 +154,10 @@ impl BoolQueryBuilder {
         I: IntoIterator<Item = Query>,
     {
         self.__should.extend(q.into_iter());
+        self
+    }
+    pub fn should_one(mut self, q: Query) -> Self {
+        self.__should.push(q);
         self
     }
     pub fn minimum_should_match(mut self, s: u64) -> Self {

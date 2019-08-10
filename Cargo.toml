@@ -28,6 +28,7 @@ actix-rt = "0.2.2"
 
 horrorshow = "0.6.6"
 pulldown-cmark = "0.5.2"
+logos = "0.9.7"
 
 rand = "0.7.0"
 bcrypt = "0.4.0"
