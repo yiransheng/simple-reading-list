@@ -29,8 +29,8 @@ impl SearchClient {
     pub fn new() -> Self {
         SearchClient {
             rest_client: Client::default(),
-            insert_doc_endpoint: insert_doc_endpoint(&CONFIG.toshi_url),
-            query_doc_endpoint: query_doc_endpoint(&CONFIG.toshi_url),
+            insert_doc_endpoint: insert_doc_endpoint(),
+            query_doc_endpoint: query_doc_endpoint(),
         }
     }
 
@@ -99,20 +99,24 @@ impl SearchClient {
     }
 }
 
-fn insert_doc_endpoint(toshi_host: &str) -> uri::Uri {
+fn insert_doc_endpoint() -> uri::Uri {
+    let index_path = format!("/{}", CONFIG.toshi_index);
+
     uri::Builder::new()
         .scheme("http")
-        .authority(toshi_host)
-        .path_and_query("/bookmarks")
+        .authority(CONFIG.toshi_url.as_str().trim())
+        .path_and_query(index_path.as_str().trim())
         .build()
         .expect("Invalid endpoint")
 }
 
-fn query_doc_endpoint(toshi_host: &str) -> uri::Uri {
+fn query_doc_endpoint() -> uri::Uri {
+    let index_path = format!("/{}", CONFIG.toshi_index);
+
     uri::Builder::new()
         .scheme("http")
-        .authority(toshi_host)
-        .path_and_query("/bookmarks")
+        .authority(CONFIG.toshi_url.as_str().trim())
+        .path_and_query(index_path.as_str().trim())
         .build()
         .expect("Invalid endpoint")
 }

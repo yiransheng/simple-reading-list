@@ -28,7 +28,7 @@ struct Opt {
 
 #[derive(Debug, Display)]
 pub enum CreateIndexError {
-    #[display(fmt = "Missing TOSHI_HOST")]
+    #[display(fmt = "Missing TOSHI_URL")]
     MissingHostError,
 
     #[display(fmt = "Missing TOSHI_INDEX")]
@@ -56,6 +56,9 @@ fn create_index(
     index_name: &str,
     payload: String,
 ) -> Result<(), CreateIndexError> {
+    let toshi_host = toshi_host.trim();
+    let index_name = index_name.trim();
+
     let get_uri = format!("http://{}/{}", toshi_host, index_name);
     let put_uri = format!("http://{}/{}/_create", toshi_host, index_name);
 
@@ -99,7 +102,7 @@ fn create_index(
 fn main() -> Result<(), Box<dyn Error>> {
     let opt = Opt::from_args();
     let payload = get_toshi_index(&opt)?;
-    let host: Cow<String> = std::env::var("TOSHI_HOST")
+    let host: Cow<String> = std::env::var("TOSHI_URL")
         .map(Cow::Owned)
         .map_err(|_| CreateIndexError::MissingHostError)
         .or_else(|_| {
