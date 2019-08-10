@@ -8,6 +8,7 @@ use actix_rt::System;
 use actix_web::client::{Client, SendRequestError};
 use actix_web::error::ResponseError;
 use actix_web::http::header::CONTENT_TYPE;
+use actix_web::http::StatusCode;
 use derive_more::*;
 use futures::future::{lazy, Future};
 use structopt::StructOpt;
@@ -55,29 +56,43 @@ fn create_index(
     index_name: &str,
     payload: String,
 ) -> Result<(), CreateIndexError> {
+    let get_uri = format!("http://{}/{}", toshi_host, index_name);
+    let put_uri = format!("http://{}/{}/_create", toshi_host, index_name);
+
     System::new("create_index").block_on(lazy(|| {
         let client = Client::default();
-        let uri = format!("http://{}/{}/_create", toshi_host, index_name);
-        println!("Endpoint: {}", uri);
+        println!("Endpoint: {}", &put_uri);
 
         client
-            .put(uri)
-            .header(CONTENT_TYPE, "application/json")
-            .send_body(payload)
+            .get(&get_uri)
+            .send()
             .map_err(CreateIndexError::RequestError)
-            .and_then(|mut resp| {
-                println!("{:?}", resp);
-                resp.body()
-                    .map_err(|err| {
-                        CreateIndexError::ResponseError(Box::new(err))
-                    })
-                    .map(|b| {
-                        println!(
-                            "Response Body:\n {}",
-                            ::std::str::from_utf8(&b).unwrap()
-                        );
-                    })
-            })
+            .and_then(
+                |resp| -> Box<Future<Item = (), Error = CreateIndexError>> {
+                    if resp.status() == StatusCode::NOT_FOUND {
+                        let client = Client::default();
+                        Box::new(
+                            client
+                                .put(&put_uri)
+                                .header(CONTENT_TYPE, "application/json")
+                                .send_body(payload)
+                                .map_err(CreateIndexError::RequestError)
+                                .and_then(|mut resp| {
+                                    println!("{:?}", resp);
+                                    resp.body()
+                                        .map_err(|err| {
+                                            CreateIndexError::ResponseError(
+                                                Box::new(err),
+                                            )
+                                        })
+                                        .map(|_| ())
+                                }),
+                        )
+                    } else {
+                        Box::new(futures::future::ok(()))
+                    }
+                },
+            )
     }))
 }
 
