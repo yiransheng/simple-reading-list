@@ -372,3 +372,357 @@ impl<'a> QueryParser<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    #[test]
+    fn test_single_word() {
+        let raw = "hello";
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [],
+                "must_not": [],
+                "should": [
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "hello",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "hello",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "hello"
+                    }
+                  }
+                ],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+
+    #[test]
+    fn test_a_few_words() {
+        let raw = "hello world nice";
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        eprintln!("{}", s);
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [],
+                "must_not": [],
+                "should": [
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "hello",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "hello",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "hello"
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "world",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "world",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "world"
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "nice",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "nice",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "nice"
+                    }
+                  }
+                ],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+
+    #[test]
+    fn test_quoted() {
+        let raw = r#""two words""#;
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        eprintln!("{}", s);
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [],
+                "must_not": [],
+                "should": [
+                  {
+                    "phrase": {
+                      "title": {
+                        "terms": [
+                          "two",
+                          "words"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "phrase": {
+                      "body": {
+                        "terms": [
+                          "two",
+                          "words"
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+
+    #[test]
+    fn test_tag_syntax() {
+        let raw = r#"tag:github.com not:tag:"google.com""#;
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        eprintln!("{}", s);
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [
+                  {
+                    "term": {
+                      "tag": "github.com"
+                    }
+                  }
+                ],
+                "must_not": [
+                  {
+                    "term": {
+                      "tag": "google.com"
+                    }
+                  }
+                ],
+                "should": [],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+
+    #[test]
+    fn test_drops_tag_phrase() {
+        let raw = r#"tag:"what up" inf"#;
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        eprintln!("{}", s);
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [],
+                "must_not": [],
+                "should": [
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "inf",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "inf",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "inf"
+                    }
+                  }
+                ],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+
+    #[test]
+    fn test_mixing_up() {
+        let raw = r#"not:'alright not: tag:t' tag:foo why"#;
+        let q = QueryParser::new(raw).parse();
+
+        let s = serde_json::to_string_pretty(&q).unwrap();
+        let js_value: Value = serde_json::from_str(s.as_ref()).unwrap();
+
+        eprintln!("{}", s);
+
+        assert_eq!(
+            js_value,
+            json!({
+              "bool": {
+                "must": [
+                  {
+                    "term": {
+                      "tag": "foo"
+                    }
+                  }
+                ],
+                "must_not": [
+                  {
+                    "phrase": {
+                      "title": {
+                        "terms": [
+                          "alright",
+                          "not:",
+                          "tag:",
+                          "t"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "phrase": {
+                      "body": {
+                        "terms": [
+                          "alright",
+                          "not:",
+                          "tag:",
+                          "t"
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "should": [
+                  {
+                    "fuzzy": {
+                      "title": {
+                        "value": "why",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "fuzzy": {
+                      "body": {
+                        "value": "why",
+                        "distance": 0,
+                        "transposition": false
+                      }
+                    }
+                  },
+                  {
+                    "term": {
+                      "tag": "why"
+                    }
+                  }
+                ],
+                "minimum_should_match": null,
+                "boost": null
+              }
+            })
+        );
+    }
+}
