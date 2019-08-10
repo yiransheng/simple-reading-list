@@ -28,6 +28,8 @@ services:
     image: "reads.yiransheng.com/toshi_bin:latest"
     volumes:
       - toshi_data:/data
+    ports:
+      - "127.0.0.1:7000:7000"
   db:
     image: "postgres:10.9-alpine"
     volumes:

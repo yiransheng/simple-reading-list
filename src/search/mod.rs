@@ -88,8 +88,6 @@ impl SearchClient {
             })
             .from_err()
             .and_then(|mut resp| {
-                // toshi response does not have correct Content-Type header
-                // so cannot use .json() here
                 resp.body().from_err().and_then(|body| {
                     if body.is_empty() {
                         Ok(SearchResults::default())
