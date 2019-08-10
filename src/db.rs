@@ -6,6 +6,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use log::*;
 use serde_derive::*;
 
+use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::{Bookmark, NewBookmark, PageData, SlimUser, User};
 
@@ -77,7 +78,7 @@ impl Handler<BookmarkIndexed> for DbExecutor {
         let conn: &PgConnection = &self.0.get().unwrap();
 
         diesel::update(bookmarks.find(msg.id))
-            .set(is_indexed.eq(true))
+            .set(toshi_index.eq(&CONFIG.toshi_index))
             .get_result::<Bookmark>(conn)
             .map_err(Into::into)
     }

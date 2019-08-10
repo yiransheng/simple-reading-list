@@ -166,7 +166,15 @@ fn create_bookmark(
                                 db.send(BookmarkIndexed::new(bookmark_id))
                                     .from_err()
                             })
-                            .map(|bm| bm.map_err(Into::into))
+                            .map(|bm| {
+                                if let Ok(ref bm) = bm {
+                                    info!(
+                                        "Bookmark(id={}) updated: {:?}",
+                                        bm.id, bm
+                                    );
+                                }
+                                bm.map_err(Into::into)
+                            })
                             .or_else(|err| {
                                 error!("Failed to index doc: {:?}", err);
                                 future::ok(Ok(created))

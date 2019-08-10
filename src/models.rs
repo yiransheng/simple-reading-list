@@ -76,7 +76,7 @@ pub struct Bookmark {
     pub body: String,
     pub tags: TagSet,
     #[serde(skip_serializing)]
-    pub is_indexed: bool,
+    pub toshi_index: Option<String>,
 }
 
 #[derive(Debug, Clone, Insertable, Deserialize)]
@@ -136,7 +136,7 @@ impl BookmarkDoc {
             title,
             url,
             body,
-            is_indexed: true,
+            toshi_index: None,
             tags: TagSet::default(),
         }
     }
@@ -407,7 +407,7 @@ mod tests {
 	    "bar",
 	    "foo"
 	  ],
-          "is_indexed": false
+          "toshi_index": null
 	}"#;
         let bookmark: Result<Bookmark, _> = serde_json::from_str(json);
         assert!(bookmark.is_ok());
@@ -422,7 +422,7 @@ mod tests {
 	  "url": "http://ok",
 	  "body": "world",
 	  "tags": [],
-          "is_indexed": true
+          "toshi_index": null
 	}"#;
 
         let json2 = r#"{

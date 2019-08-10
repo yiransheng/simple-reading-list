@@ -6,7 +6,7 @@ table! {
         url -> Varchar,
         body -> Text,
         tags -> Jsonb,
-        is_indexed -> Bool,
+        toshi_index -> Nullable<Text>,
     }
 }
 

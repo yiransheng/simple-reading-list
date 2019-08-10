@@ -1,6 +1,6 @@
 -- track is indexed 
 ALTER TABLE bookmarks 
-ADD COLUMN is_indexed BOOLEAN NOT NULL DEFAULT false;
+ADD COLUMN toshi_index TEXT;
 
 -- index created
 CREATE INDEX created_idx ON bookmarks (created);
