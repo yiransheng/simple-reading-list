@@ -9,6 +9,16 @@ pub enum Query {
     Fuzzy(FuzzyQuery),
     Phrase(PhraseQuery),
 }
+impl Query {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Query::Boolean { bool: b } => b.is_empty(),
+            _ => unreachable!(
+                "Expect this check to only be called on Bool query"
+            ),
+        }
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct ExactTerm {
@@ -31,6 +41,14 @@ pub struct BoolQuery {
     should: Vec<Query>,
     minimum_should_match: Option<u64>,
     boost: Option<f64>,
+}
+
+impl BoolQuery {
+    pub fn is_empty(&self) -> bool {
+        self.must.is_empty()
+            && self.must_not.is_empty()
+            && self.should.is_empty()
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, Clone)]

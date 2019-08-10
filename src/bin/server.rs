@@ -28,7 +28,7 @@ use common::config::CONFIG;
 use common::db::{AuthData, DbExecutor, QueryRecent};
 use common::error::ServiceError;
 use common::models::{Bookmark, BookmarkDoc, NewBookmark, PageData, SlimUser};
-use common::search::{Search, SearchClient};
+use common::search::{QueryParser, Search, SearchClient};
 use common::templates::{
     bookmark_jsonml, BookmarkItem, IntoBookmark, PageTemplate,
 };
@@ -97,7 +97,7 @@ fn search_bookmark(
     match search {
         Some(ref search) if !search.q.is_empty() => Either::A(
             search_client
-                .query_docs(dbg!(&search.q))
+                .query_docs(QueryParser::new(&search.q).parse())
                 .map(move |results| HttpResponse::Ok().json(results)),
         ),
         _ => Either::B(ok(HttpResponse::BadRequest().into())),
@@ -108,10 +108,22 @@ fn search_bookmark_html(
     search_client: web::Data<SearchClient>,
     search: Option<web::Query<Search>>,
 ) -> impl Future<Item = HttpResponse, Error = Error> {
+    #[inline(always)]
+    fn redirect_empty_search() -> impl Future<Item = HttpResponse, Error = Error>
+    {
+        ok(HttpResponse::Found()
+            .header(http::header::LOCATION, "/")
+            .finish()
+            .into_body())
+    }
     match search {
         Some(ref search) if !search.q.is_empty() => {
             let query_string = search.q.clone();
-            Either::A(search_client.query_docs(&search.q).and_then(
+            let query = QueryParser::new(&search.q).parse();
+            if query.is_empty() {
+                return Either::B(redirect_empty_search());
+            }
+            Either::A(search_client.query_docs(query).and_then(
                 move |bookmarks| {
                     let items = bookmarks
                         .docs
@@ -128,10 +140,7 @@ fn search_bookmark_html(
                 },
             ))
         }
-        _ => Either::B(ok(HttpResponse::Found()
-            .header(http::header::LOCATION, "/")
-            .finish()
-            .into_body())),
+        _ => Either::B(redirect_empty_search()),
     }
 }
 

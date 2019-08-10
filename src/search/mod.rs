@@ -8,7 +8,8 @@ mod index;
 mod query;
 mod query_parser;
 
-use self::query_parser::QueryParser;
+pub use self::query::Query;
+pub use self::query_parser::QueryParser;
 use crate::config::CONFIG;
 use crate::error::ServiceError;
 use crate::models::{BookmarkDoc, SearchResults};
@@ -71,7 +72,7 @@ impl SearchClient {
 
     pub fn query_docs(
         &self,
-        q: &str,
+        q: Query,
     ) -> impl Future<Item = SearchResults, Error = Error> {
         #[derive(Serialize)]
         struct QueryPayload<Q> {
@@ -79,8 +80,6 @@ impl SearchClient {
             limit: u32,
         }
 
-        eprintln!("Query: {}", q);
-        let q = QueryParser::new(q).parse();
         eprintln!("{}", serde_json::to_string_pretty(&q).unwrap());
         self.rest_client
             .post(&self.query_doc_endpoint)
