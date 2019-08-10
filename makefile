@@ -11,14 +11,16 @@ ADMIN_SRC := $(shell find admin-ui/src -name '*')
 
 docker: $(OUT)/build-toshi-docker $(OUT)/build-server-docker $(OUT)/build-caddy-docker
 
-dev: $(OUT)/build-js $(OUT)/build-toshi-docker
+dev: $(OUT)/build-js dev-toshi
 	cargo run --bin create-admin-user -- -u admin -p password & \
 	cargo run --bin create-toshi-index -- conf/toshi_index.json & \
 	cargo run --bin server & \
-	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data --name=toshi \
-	  $$(cat $(OUT)/build-toshi-docker) & \
 	cd admin-ui && yarn start & \
 	caddy
+
+dev-toshi: $(OUT)/build-toshi-docker
+	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data --name=toshi \
+	  $$(cat $(OUT)/build-toshi-docker) &
 
 $(OUT):
 	mkdir -p $(OUT)
@@ -64,7 +66,7 @@ $(OUT)/build-caddy-docker: $(OUT)/build-admin $(OUT)/build-js
 	echo $$(docker images -q $(CADDY_BIN):$(RELEASE)) >> $(OUT)/build-caddy-docker
 
 
-.PHONY: clean dev docker
+.PHONY: clean dev dev-toshi docker
 
 clean:
 	rm -rf assets/js/*
