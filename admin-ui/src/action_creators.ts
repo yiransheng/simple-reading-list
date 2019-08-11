@@ -1,4 +1,5 @@
 import {read, end, FreeDSL, dispatch, effect, Do} from 'redux-free-flow';
+import parseUrl from 'parse-url';
 
 import {
   Result,
@@ -51,7 +52,21 @@ export function createBookmark(): FreeDSL<State, Action, void> {
       if (bookmark.tag === 'None') {
         return end;
       }
-      const data = bookmark.value;
+      const rawData = bookmark.value;
+      let data = rawData;
+
+      // add root domain of url to bookmark data if possible
+      try {
+        const {resource} = parseUrl(rawData.url);
+        const tags = [...rawData.tags, resource];
+        data = {
+          ...rawData,
+          tags,
+        };
+      } catch (err) {
+        data = rawData;
+      }
+
       return dispatch(request({blocking: true}))
         .andThen(() => effect(createBookmarkApi(data)))
         .andThen(
