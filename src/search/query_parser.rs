@@ -2,6 +2,7 @@ use logos::{Lexer, Logos};
 
 use super::query::*;
 use crate::macros::*;
+use crate::models::normalize_tag;
 
 #[derive(Logos, Copy, Clone, Debug, PartialEq, Eq)]
 enum Token {
@@ -134,7 +135,7 @@ impl<'a> QueryParser<'a> {
                         .must_not(
                             ExactQueryBuilder::new()
                                 .with_field("tags".to_owned())
-                                .with_term(self.lexer.slice().to_owned())
+                                .with_term(normalize_tag(self.lexer.slice()))
                                 .build(),
                         );
                 } else {
@@ -154,7 +155,7 @@ impl<'a> QueryParser<'a> {
                         .should(
                             ExactQueryBuilder::new()
                                 .with_field("tags".to_owned())
-                                .with_term(self.lexer.slice().to_owned())
+                                .with_term(normalize_tag(self.lexer.slice()))
                                 .build(),
                         )
                 }
@@ -186,7 +187,7 @@ impl<'a> QueryParser<'a> {
                                 .must_not(
                                     ExactQueryBuilder::new()
                                         .with_field("tags".to_owned())
-                                        .with_term(term.to_string())
+                                        .with_term(normalize_tag(term))
                                         .build(),
                                 )
                         } else {
@@ -206,7 +207,7 @@ impl<'a> QueryParser<'a> {
                                 .should(
                                     ExactQueryBuilder::new()
                                         .with_field("tags".to_owned())
-                                        .with_term(term.to_string())
+                                        .with_term(normalize_tag(term))
                                         .build(),
                                 )
                         }
@@ -281,14 +282,14 @@ impl<'a> QueryParser<'a> {
                     builder = builder.must_not(
                         ExactQueryBuilder::new()
                             .with_field("tags".to_owned())
-                            .with_term(self.lexer.slice().to_owned())
+                            .with_term(normalize_tag(self.lexer.slice()))
                             .build(),
                     )
                 } else {
-                    builder = builder.must(
+                    builder = builder.should(
                         ExactQueryBuilder::new()
                             .with_field("tags".to_owned())
-                            .with_term(self.lexer.slice().to_owned())
+                            .with_term(normalize_tag(self.lexer.slice()))
                             .build(),
                     );
                 }
@@ -307,14 +308,14 @@ impl<'a> QueryParser<'a> {
                             builder = builder.must_not(
                                 ExactQueryBuilder::new()
                                     .with_field("tags".to_owned())
-                                    .with_term(term.to_string())
+                                    .with_term(normalize_tag(term))
                                     .build(),
                             )
                         } else {
-                            builder = builder.must(
+                            builder = builder.should(
                                 ExactQueryBuilder::new()
                                     .with_field("tags".to_owned())
-                                    .with_term(term.to_string())
+                                    .with_term(normalize_tag(term))
                                     .build(),
                             );
                         }

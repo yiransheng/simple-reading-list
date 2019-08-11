@@ -98,6 +98,18 @@ pub struct BookmarkDoc {
     pub tags: String,
 }
 
+pub fn normalize_tag<T: AsRef<str>>(tag: T) -> String {
+    tag.as_ref()
+        .trim()
+        .chars()
+        // Default Toshi/tantivy tokenizer split on whitespaces and non-alphanumeric
+        // chars, replace them with a uncommon alpha char so that a whole tag is indexed
+        // as a single token.
+        // https://doc.rust-lang.org/std/primitive.char.html#method.is_alphanumeric
+        .map(|c| if c.is_alphanumeric() { c } else { '¾' })
+        .collect()
+}
+
 impl From<Bookmark> for BookmarkDoc {
     fn from(b: Bookmark) -> Self {
         let Bookmark {
@@ -314,7 +326,7 @@ pub struct TagSet(HashSet<String>);
 
 impl TagSet {
     fn join(&self, sep: &str) -> String {
-        itertools::join(self.0.iter(), sep)
+        itertools::join(self.0.iter().map(normalize_tag), sep)
     }
 }
 
