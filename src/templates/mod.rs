@@ -37,6 +37,8 @@ impl<I> PageTemplate<I> {
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/asset_macro.rs"));
+
 impl<R, I> RenderOnce for PageTemplate<I>
 where
     I: Iterator<Item = R>,
@@ -53,6 +55,9 @@ where
             None => "",
         };
 
+        let css_href = asset!("/static/site.css");
+        let script_href = asset!("/static/js/js-enhance.umd.js");
+
         let mut count: i32 = 0;
 
         tmpl << html! {
@@ -62,7 +67,7 @@ where
                     title: "Insightful Reads";
                     link(rel = "stylesheet",
                          type = "text/css",
-                         href = "/static/site.css");
+                         href = css_href);
                 }
                 body {
                     header {
@@ -99,7 +104,7 @@ where
                             }
                         }
                     }
-                    script(src = "/static/js/js-enhance.umd.js") {}
+                    script(src = script_href) {}
                 }
             }
         };

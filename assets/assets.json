@@ -1,0 +1,10 @@
+{
+  "/static/site.css": {
+    "src": "assets/site.css",
+    "target": "/static/site.536aaadd07.css"
+  },
+  "/static/js/js-enhance.umd.js": {
+    "src": "assets/js/js-enhance.umd.js",
+    "target": "/static/js/js-enhance.umd.30f9d73f95.js"
+  }
+}
