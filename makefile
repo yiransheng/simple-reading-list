@@ -11,7 +11,7 @@ ADMIN_SRC := $(shell find admin-ui/src -name '*')
 
 docker: $(OUT)/build-toshi-docker $(OUT)/build-server-docker $(OUT)/build-caddy-docker
 
-dev: $(OUT)/build-js dev-toshi
+dev: $(OUT)/build-js dev-toshi cache-bust
 	cargo run --bin create-admin-user -- -u admin -p password & \
 	cargo run --bin create-toshi-index -- conf/toshi_index.json & \
 	cargo run --bin server & \
@@ -22,6 +22,9 @@ dev-toshi: $(OUT)/build-toshi-docker
 	docker run --rm -p 7000:7000 -v $$(pwd)/data:/data --name=toshi \
 	  $$(cat $(OUT)/build-toshi-docker) &
 
+cache-bust: $(OUT)/build-js
+	python3 scripts/asset_hash.py assets/assets.json
+
 $(OUT):
 	mkdir -p $(OUT)
 
@@ -30,7 +33,7 @@ dummy_src: $(SERVER_SRC)
 	echo 'fn main() {}' | tee $$(find src/bin -name '*.rs' | sed 's/src/dummy_src/') 
 	echo 'syntax error' > dummy_src/lib.rs
 
-$(OUT)/build-server-docker: dummy_src $(SERVER_SRC)
+$(OUT)/build-server-docker: dummy_src $(SERVER_SRC) cache-bust
 	( [[ -n $$(docker images -q $(SERVER_BIN):$(RELEASE)) ]] || \
 	  docker build -f docker/Dockerfile.server -t $(SERVER_BIN):$(RELEASE) . ) && \
 	docker tag $(SERVER_BIN):$(RELEASE) $(SERVER_BIN):latest && \
@@ -59,14 +62,14 @@ $(OUT)/build-js: $(OUT) $(JS_SRC)
 	popd && \
 	echo "done" > $(OUT)/build-js
 
-$(OUT)/build-caddy-docker: $(OUT)/build-admin $(OUT)/build-js
+$(OUT)/build-caddy-docker: $(OUT)/build-admin $(OUT)/build-js cache-bust
 	( [[ -n $$(docker images -q $(CADDY_BIN):$(RELEASE)) ]] || \
 	  docker build -f docker/Dockerfile.caddy -t $(CADDY_BIN):$(RELEASE) . ) && \
 	docker tag $(CADDY_BIN):$(RELEASE) $(CADDY_BIN):latest && \
 	echo $$(docker images -q $(CADDY_BIN):$(RELEASE)) >> $(OUT)/build-caddy-docker
 
 
-.PHONY: clean dev dev-toshi docker
+.PHONY: clean dev dev-toshi docker cache-bust
 
 clean:
 	rm -rf assets/js/*
