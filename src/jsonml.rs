@@ -4,6 +4,8 @@ use pulldown_cmark::{CowStr, Event, LinkType, Parser, Tag};
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 use serde_derive::*;
 
+use crate::macros::*;
+
 #[derive(Debug)]
 pub struct JsonML<'a> {
     elements: Vec<Element<'a>>,
@@ -139,15 +141,22 @@ where
     }
     fn elements(&mut self) -> IResult<Vec<Element<'a>>> {
         let mut elements = vec![];
-        let mut i = 0;
-        while let Some(el) = self.maybe_element()? {
-            elements.push(el);
-            i += 1;
-            // just in case
-            if i > 10000 {
-                panic!("Possible infinite loop! (MDParser)");
+        loop_panic_when_stuck!({
+            match self.maybe_element() {
+                Ok(Some(el)) => {
+                    elements.push(el);
+                }
+                Ok(None) => break,
+                Err(ParseError::NotSupported(msg)) => {
+                    log::warn!(
+                        "Markdown parser encountwerd unsupported feature: {}",
+                        msg
+                    );
+                    break;
+                }
+                Err(err) => return Err(err),
             }
-        }
+        });
 
         Ok(elements)
     }
@@ -547,6 +556,48 @@ fn test() {}
             ]
           ]
         ]);
+
+        assert_eq!(expected, js_value);
+    }
+
+    #[test]
+    fn test_handle_unsupported_feature() {
+        let raw = r#"# Header 3
+This `inline` is paragraph, with [Link](https://www.google.com).
+
+<div>foo</div>
+"#;
+
+        let jsonml = MDParser::new(raw).jsonml().unwrap();
+        let serialized = serde_json::to_string_pretty(&jsonml).unwrap();
+        eprintln!("{}", serialized);
+        let js_value: serde_json::Value =
+            serde_json::from_str(&serialized).unwrap();
+        let expected = serde_json::json!(
+        [
+          [
+            "h3",
+            "Header 3"
+          ],
+          [
+            "p",
+            "This ",
+            [
+              "code",
+              "inline"
+            ],
+            " is paragraph, with ",
+            [
+              "a",
+              {
+                "href": "https://www.google.com"
+              },
+              "Link"
+            ],
+            "."
+          ]
+        ]
+        );
 
         assert_eq!(expected, js_value);
     }
