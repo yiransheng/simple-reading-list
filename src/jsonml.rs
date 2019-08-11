@@ -169,7 +169,13 @@ where
                 self.advance()?;
                 Element::SelfClosing("hr", None)
             }
-            Event::Code(_) => unimplemented!(),
+            Event::Code(_) => {
+                if let Event::Code(code) = self.advance()? {
+                    Element::Tree("code", None, vec![Element::Text(code)])
+                } else {
+                    unreachable!()
+                }
+            }
             Event::End(_) => return Ok(None),
             _ => return Err(ParseError::NotSupported("unsupported feature")),
         };
@@ -224,6 +230,7 @@ where
                 }
                 Tag::Link(ty, dest, title) => self.link(ty, dest, title),
                 Tag::Image(ty, dest, title) => self.image(ty, dest, title),
+                Tag::CodeBlock(info) => self.code(info),
                 _ => Err(ParseError::Expects("open tag")),
             },
             _ => Err(ParseError::Expects("open tag")),
@@ -275,6 +282,16 @@ where
         };
 
         Ok(Element::SelfClosing("img", Some(attrs)))
+    }
+    fn code(&mut self, _info: CowStr<'a>) -> IResult<Element<'a>> {
+        let code = self.text()?;
+        self.expects_close()?;
+
+        Ok(Element::Tree(
+            "pre",
+            None,
+            vec![Element::Tree("code", None, vec![code])],
+        ))
     }
 
     fn basic_tag(&mut self, open_tag: &'static str) -> IResult<Element<'a>> {
@@ -452,7 +469,11 @@ mod tests {
     #[test]
     fn test_from_md_events() {
         let raw = r#"### Header 3
-This is paragraph, with [Link](https://www.google.com).
+This `inline` is paragraph, with [Link](https://www.google.com).
+
+```
+fn test() {}
+```
 
 * Foo
 * Bar
@@ -463,6 +484,7 @@ This is paragraph, with [Link](https://www.google.com).
 
         let jsonml = MDParser::new(raw).jsonml().unwrap();
         let serialized = serde_json::to_string_pretty(&jsonml).unwrap();
+        eprintln!("{}", serialized);
         let js_value: serde_json::Value =
             serde_json::from_str(&serialized).unwrap();
         let expected = serde_json::json!(
@@ -473,7 +495,12 @@ This is paragraph, with [Link](https://www.google.com).
           ],
           [
             "p",
-            "This is paragraph, with ",
+            "This ",
+            [
+              "code",
+              "inline"
+            ],
+            " is paragraph, with ",
             [
               "a",
               {
@@ -484,33 +511,14 @@ This is paragraph, with [Link](https://www.google.com).
             "."
           ],
           [
-            "ul",
+            "pre",
             [
-              "li",
-              "Foo"
-            ],
-            [
-              "li",
-              "Bar"
-            ],
-            [
-              "li",
-              "Baz",
-              [
-                "ul",
-                [
-                  "li",
-                  "Baz 1"
-                ],
-                [
-                  "li",
-                  "Baz 2"
-                ]
-              ]
+              "code",
+              "fn test() {}\n"
             ]
           ]
         ]);
 
-        assert_eq!(expected, js_value,);
+        assert_eq!(expected, js_value);
     }
 }
