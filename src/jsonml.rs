@@ -177,7 +177,38 @@ where
                 }
             }
             Event::End(_) => return Ok(None),
-            _ => return Err(ParseError::NotSupported("unsupported feature")),
+            Event::FootnoteReference(_)
+            | Event::Html(_)
+            | Event::InlineHtml(_) => {
+                self.advance()?;
+                Element::Text("".into())
+            }
+            Event::TaskListMarker(true) => {
+                self.advance()?;
+                let attrs = Attrs {
+                    attrs: vec![
+                        Attr {
+                            key: "type".into(),
+                            value: "checkbox".into(),
+                        },
+                        Attr {
+                            key: "checked".into(),
+                            value: "".into(),
+                        },
+                    ],
+                };
+                Element::SelfClosing("input", Some(attrs))
+            }
+            Event::TaskListMarker(false) => {
+                self.advance()?;
+                let attrs = Attrs {
+                    attrs: vec![Attr {
+                        key: "type".into(),
+                        value: "checkbox".into(),
+                    }],
+                };
+                Element::SelfClosing("input", Some(attrs))
+            }
         };
 
         Ok(Some(el))
@@ -326,23 +357,21 @@ fn to_basic_tag(tag: &Tag) -> IResult<&'static str> {
         Tag::Header(4) => "h4",
         Tag::Header(5) => "h5",
         Tag::Header(6) => "h6",
+        Tag::Header(_) => "h3",
         Tag::BlockQuote => "blockquote",
         Tag::Strong => "strong",
         Tag::Item => "li",
         Tag::List(None) => "ul",
         Tag::Emphasis => "em",
+        Tag::Strikethrough => "del",
         // not supported
-        Tag::Header(_) => return Err(ParseError::NotSupported("h1/h2")),
         Tag::FootnoteDefinition(_) => {
             return Err(ParseError::NotSupported("footnote"))
         }
         Tag::HtmlBlock => return Err(ParseError::NotSupported("html")),
         Tag::Table(_) => return Err(ParseError::NotSupported("table")),
         Tag::TableRow => return Err(ParseError::NotSupported("tr")),
-        Tag::TableCell => return Err(ParseError::NotSupported("tr")),
-        Tag::Strikethrough => {
-            return Err(ParseError::NotSupported("strikethrough"))
-        }
+        Tag::TableCell => return Err(ParseError::NotSupported("td")),
         _ => return Err(ParseError::ComplexTag),
     };
 
