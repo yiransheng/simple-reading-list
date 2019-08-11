@@ -66,7 +66,9 @@ where
                 }
                 body {
                     header {
-                        h1 : "Insightful Reads";
+                        h1 {
+                            a(href = "/"): "Insightful Reads"
+                        }
                         form(action = "/search", method = "GET") {
                             div {
                                 : Raw(ICON);
