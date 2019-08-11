@@ -153,7 +153,7 @@ impl<'a> QueryParser<'a> {
                                 .build(),
                         )
                         .should(
-                            FuzzyQueryBuilder::new()
+                            ExactQueryBuilder::new()
                                 .with_field("tags".to_owned())
                                 .with_term(normalize_tag(self.lexer.slice()))
                                 .build(),
@@ -193,13 +193,13 @@ impl<'a> QueryParser<'a> {
                         } else {
                             builder = builder
                                 .should(
-                                    FuzzyQueryBuilder::new()
+                                    ExactQueryBuilder::new()
                                         .with_field("body".to_owned())
                                         .with_term(term.to_string())
                                         .build(),
                                 )
                                 .should(
-                                    FuzzyQueryBuilder::new()
+                                    ExactQueryBuilder::new()
                                         .with_field("title".to_owned())
                                         .with_term(term.to_string())
                                         .build(),
