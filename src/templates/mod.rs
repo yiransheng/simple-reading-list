@@ -53,6 +53,8 @@ where
             None => "",
         };
 
+        let mut count: i32 = 0;
+
         tmpl << html! {
             : doctype::HTML;
             html {
@@ -75,12 +77,22 @@ where
                     }
                     div(class = "main") {
                         @ for t in items {
-                            |tmpl| tmpl << t
+                            |tmpl| {
+                                count += 1;
+                                tmpl << t
+                            }
                         }
                         @ if let Some(next_page) = next_page {
                             div(class = "item") {
                                 a(href = "#", data-next-page = next_page) {
                                     : "More >>"
+                                }
+                            }
+                        }
+                        @ if count == 0 {
+                            div(class = "item empty") {
+                                p {
+                                   : "Empty results."
                                 }
                             }
                         }
