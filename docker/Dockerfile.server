@@ -15,11 +15,12 @@ RUN mkdir -p ./.cargo
 COPY conf/cargo_config ./.cargo/config
 
 # caching downloads
-RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl --all || true
+RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --verbose --target=x86_64-unknown-linux-musl || true
 
 COPY ./src ./src
 COPY ./migrations ./migrations
 
+RUN sleep 1h 
 RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl --all
 
 RUN mkdir -p /build-out
