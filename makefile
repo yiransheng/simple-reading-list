@@ -23,7 +23,8 @@ dev-toshi: $(OUT)/build-toshi-docker
 	  $$(cat $(OUT)/build-toshi-docker) &
 
 cache-bust: $(OUT)/build-js
-	python3 scripts/asset_hash.py assets/assets.json
+	python3 scripts/asset_hash.py assets/assets.json \
+		--rs src/templates/asset_macro.rs
 
 $(OUT):
 	mkdir -p $(OUT)

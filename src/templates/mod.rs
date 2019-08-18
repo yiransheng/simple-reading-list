@@ -37,7 +37,7 @@ impl<I> PageTemplate<I> {
     }
 }
 
-include!(concat!(env!("OUT_DIR"), "/asset_macro.rs"));
+include!("asset_macro.rs");
 
 impl<R, I> RenderOnce for PageTemplate<I>
 where
