@@ -2,8 +2,15 @@ version: '3.2'
 services:
   web:
     image: "reads.yiransheng.com/caddy:latest"
+    environment:
+      CADDY_HOST: "${CADDY_HOST}"
+      TLS_EMAIL_OR_OFF: "${TLS_EMAIL_OR_OFF}"
     ports:
-      - "127.0.0.1:3000:2019"
+      - "127.0.0.1:3000:2015"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/root/.caddy
     depends_on:
       - server
   server:
@@ -34,5 +41,6 @@ services:
 volumes:
   pg_data:
   toshi_data:
+  caddy_data:
 
 
