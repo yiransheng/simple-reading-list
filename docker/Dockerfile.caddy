@@ -2,8 +2,11 @@ FROM abiosoft/caddy:1.0.1-no-stats
 
 COPY conf/Caddyfile /etc/Caddyfile
 
-COPY admin-ui/build /admin-ui
+RUN mkdir -p /web
 
-COPY assets /assets
+COPY admin-ui/build /web/admin
+
+COPY assets /web/static
+COPY assets/favicon.ico /web/favicon.ico
 
 RUN ls / -al

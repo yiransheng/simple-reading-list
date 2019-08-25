@@ -1,15 +1,17 @@
-0.0.0.0:2019/admin {
-  gzip
-  root /admin-ui
+0.0.0.0:2019
+
+root /web
+
+gzip
+
+header /static {
+  Cache-Control "public,max-age=31536000,immutable"
+}
+header /admin/static {
+  Cache-Control "public,max-age=31536000,immutable"
 }
 
-0.0.0.0:2019/static {
-  gzip
-  header / Cache-Control "public,max-age=31536000,immutable"
-  root /assets
-}
-
-0.0.0.0:2019 {
-  header / Cache-Control "no-cache"
-  proxy / server:8080
+proxy / server:8080 {
+  header_downstream Cache-Control "no-cache"
+  except /admin /static /robots.txt /favicon.ico
 }
