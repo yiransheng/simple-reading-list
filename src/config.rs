@@ -11,6 +11,7 @@ pub struct Config {
     pub toshi_url: String,
     pub toshi_index: String,
     pub host_port: String,
+    pub allowed_origin: String,
     pub jwt_secret: Vec<u8>,
 }
 
@@ -20,6 +21,9 @@ impl Config {
             database_url: Self::from_env("DATABASE_URL"),
             toshi_url: Self::from_env("TOSHI_URL"),
             toshi_index: Self::from_env("TOSHI_INDEX"),
+            allowed_origin: Self::from_env_or_else("ALLOWED_ORIGINW", || {
+                "http://localhost:3000".to_owned()
+            }),
             host_port: Self::from_env_or_else("HOST_PORT", || {
                 "8080".to_owned()
             }),
