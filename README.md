@@ -39,8 +39,34 @@ make dev
 
 ## Deployment
 
+1. Build images
+
 ```
 make docker
 ```
 
-`docker-compose.yaml` under construction.
+2. Edit `deployment/.env`
+
+Particularly, set `CADDY_HOST` and `ALLOWED_ORIGIN` to production DNS. If these ENV variables are left to their defaults, `docker-compose` will serve on `localhost:3000` with TLS off.
+
+3. Start with `docker-compose`
+
+```
+docker-compose up -d
+```
+
+4. Create admin user from command line
+
+```
+docker ps
+# copy container id for server
+docker exec -it <container_id> /bin/ash
+# run in container
+/create-admin-user -u <username> -p <password>
+```
+
+5. Login at `/admin`
+
+
+
+Note: `docker-push-ssh` (`pip2 install docker-push-ssh`) can be used to push images to server over ssh.

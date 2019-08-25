@@ -21,7 +21,7 @@ impl Config {
             database_url: Self::from_env("DATABASE_URL"),
             toshi_url: Self::from_env("TOSHI_URL"),
             toshi_index: Self::from_env("TOSHI_INDEX"),
-            allowed_origin: Self::from_env_or_else("ALLOWED_ORIGINW", || {
+            allowed_origin: Self::from_env_or_else("ALLOWED_ORIGIN", || {
                 "http://localhost:3000".to_owned()
             }),
             host_port: Self::from_env_or_else("HOST_PORT", || {

@@ -21,6 +21,7 @@ services:
       TOSHI_URL: "${TOSHI_URL}"
       TOSHI_INDEX: "${TOSHI_INDEX}"
       RUST_LOG: "${RUST_LOG}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
     depends_on:
       - db
       - toshi
