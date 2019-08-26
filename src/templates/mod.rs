@@ -64,6 +64,7 @@ where
             : doctype::HTML;
             html {
                 head {
+                    : Raw(r#"<meta charset="UTF-8">"#);
                     title: "Insightful Reads";
                     link(rel = "stylesheet",
                          type = "text/css",
